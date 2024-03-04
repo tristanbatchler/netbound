@@ -1,0 +1,233 @@
+{
+    "BasePacket": {
+        "properties": {
+            "from_pid": {
+                "title": "From Pid",
+                "type": "integer"
+            },
+            "to_pid": {
+                "anyOf": [
+                    {
+                        "type": "integer"
+                    },
+                    {
+                        "items": {
+                            "type": "integer"
+                        },
+                        "type": "array"
+                    }
+                ],
+                "title": "To Pid"
+            }
+        },
+        "required": [
+            "from_pid",
+            "to_pid"
+        ],
+        "type": "object"
+    },
+    "OkPacket": {
+        "properties": {
+            "from_pid": {
+                "title": "From Pid",
+                "type": "integer"
+            },
+            "to_pid": {
+                "anyOf": [
+                    {
+                        "type": "integer"
+                    },
+                    {
+                        "items": {
+                            "type": "integer"
+                        },
+                        "type": "array"
+                    }
+                ],
+                "title": "To Pid"
+            }
+        },
+        "required": [
+            "from_pid",
+            "to_pid"
+        ],
+        "type": "object"
+    },
+    "DenyPacket": {
+        "properties": {
+            "from_pid": {
+                "title": "From Pid",
+                "type": "integer"
+            },
+            "to_pid": {
+                "anyOf": [
+                    {
+                        "type": "integer"
+                    },
+                    {
+                        "items": {
+                            "type": "integer"
+                        },
+                        "type": "array"
+                    }
+                ],
+                "title": "To Pid"
+            },
+            "reason": {
+                "anyOf": [
+                    {
+                        "type": "string"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ],
+                "default": null,
+                "title": "Reason"
+            }
+        },
+        "required": [
+            "from_pid",
+            "to_pid"
+        ],
+        "type": "object"
+    },
+    "PIDPacket": {
+        "properties": {
+            "from_pid": {
+                "title": "From Pid",
+                "type": "integer"
+            },
+            "to_pid": {
+                "anyOf": [
+                    {
+                        "type": "integer"
+                    },
+                    {
+                        "items": {
+                            "type": "integer"
+                        },
+                        "type": "array"
+                    }
+                ],
+                "title": "To Pid"
+            },
+            "pid": {
+                "title": "Pid",
+                "type": "integer"
+            }
+        },
+        "required": [
+            "from_pid",
+            "to_pid",
+            "pid"
+        ],
+        "type": "object"
+    },
+    "LoginPacket": {
+        "properties": {
+            "from_pid": {
+                "title": "From Pid",
+                "type": "integer"
+            },
+            "to_pid": {
+                "anyOf": [
+                    {
+                        "type": "integer"
+                    },
+                    {
+                        "items": {
+                            "type": "integer"
+                        },
+                        "type": "array"
+                    }
+                ],
+                "title": "To Pid"
+            },
+            "username": {
+                "title": "Username",
+                "type": "string"
+            },
+            "password": {
+                "title": "Password",
+                "type": "string"
+            }
+        },
+        "required": [
+            "from_pid",
+            "to_pid",
+            "username",
+            "password"
+        ],
+        "type": "object"
+    },
+    "RegisterPacket": {
+        "properties": {
+            "from_pid": {
+                "title": "From Pid",
+                "type": "integer"
+            },
+            "to_pid": {
+                "anyOf": [
+                    {
+                        "type": "integer"
+                    },
+                    {
+                        "items": {
+                            "type": "integer"
+                        },
+                        "type": "array"
+                    }
+                ],
+                "title": "To Pid"
+            },
+            "username": {
+                "title": "Username",
+                "type": "string"
+            },
+            "password": {
+                "title": "Password",
+                "type": "string"
+            }
+        },
+        "required": [
+            "from_pid",
+            "to_pid",
+            "username",
+            "password"
+        ],
+        "type": "object"
+    },
+    "DisconnectPacket": {
+        "properties": {
+            "from_pid": {
+                "title": "From Pid",
+                "type": "integer"
+            },
+            "to_pid": {
+                "anyOf": [
+                    {
+                        "type": "integer"
+                    },
+                    {
+                        "items": {
+                            "type": "integer"
+                        },
+                        "type": "array"
+                    }
+                ],
+                "title": "To Pid"
+            },
+            "reason": {
+                "title": "Reason",
+                "type": "string"
+            }
+        },
+        "required": [
+            "from_pid",
+            "to_pid",
+            "reason"
+        ],
+        "type": "object"
+    }
+}
