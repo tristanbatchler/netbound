@@ -1,2 +1,4 @@
 websockets
+msgpack
+msgpack-types
 pydantic

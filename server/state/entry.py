@@ -10,7 +10,7 @@ class EntryState(BaseState):
             self._handle_register(p)
         
     def _handle_login(self, p: LoginPacket) -> None:
-        logging.debug(f"HANDLING LOGIN FOR {self._pid}: {p}")
+        logging.debug(f"HANDLING LOGIN FOR {self._pid.hex()}: {p}")
 
     def _handle_register(self, p: RegisterPacket) -> None:
-        logging.debug(f"HANDLING REGISTER FOR {self._pid}: {p}")
+        logging.debug(f"HANDLING REGISTER FOR {self._pid.hex()}: {p}")

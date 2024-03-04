@@ -2,17 +2,20 @@
     "BasePacket": {
         "properties": {
             "from_pid": {
+                "format": "binary",
                 "title": "From Pid",
-                "type": "integer"
+                "type": "string"
             },
             "to_pid": {
                 "anyOf": [
                     {
-                        "type": "integer"
+                        "format": "binary",
+                        "type": "string"
                     },
                     {
                         "items": {
-                            "type": "integer"
+                            "format": "binary",
+                            "type": "string"
                         },
                         "type": "array"
                     }
@@ -29,17 +32,20 @@
     "OkPacket": {
         "properties": {
             "from_pid": {
+                "format": "binary",
                 "title": "From Pid",
-                "type": "integer"
+                "type": "string"
             },
             "to_pid": {
                 "anyOf": [
                     {
-                        "type": "integer"
+                        "format": "binary",
+                        "type": "string"
                     },
                     {
                         "items": {
-                            "type": "integer"
+                            "format": "binary",
+                            "type": "string"
                         },
                         "type": "array"
                     }
@@ -56,17 +62,20 @@
     "DenyPacket": {
         "properties": {
             "from_pid": {
+                "format": "binary",
                 "title": "From Pid",
-                "type": "integer"
+                "type": "string"
             },
             "to_pid": {
                 "anyOf": [
                     {
-                        "type": "integer"
+                        "format": "binary",
+                        "type": "string"
                     },
                     {
                         "items": {
-                            "type": "integer"
+                            "format": "binary",
+                            "type": "string"
                         },
                         "type": "array"
                     }
@@ -95,17 +104,20 @@
     "PIDPacket": {
         "properties": {
             "from_pid": {
+                "format": "binary",
                 "title": "From Pid",
-                "type": "integer"
+                "type": "string"
             },
             "to_pid": {
                 "anyOf": [
                     {
-                        "type": "integer"
+                        "format": "binary",
+                        "type": "string"
                     },
                     {
                         "items": {
-                            "type": "integer"
+                            "format": "binary",
+                            "type": "string"
                         },
                         "type": "array"
                     }
@@ -113,8 +125,9 @@
                 "title": "To Pid"
             },
             "pid": {
+                "format": "binary",
                 "title": "Pid",
-                "type": "integer"
+                "type": "string"
             }
         },
         "required": [
@@ -127,17 +140,20 @@
     "LoginPacket": {
         "properties": {
             "from_pid": {
+                "format": "binary",
                 "title": "From Pid",
-                "type": "integer"
+                "type": "string"
             },
             "to_pid": {
                 "anyOf": [
                     {
-                        "type": "integer"
+                        "format": "binary",
+                        "type": "string"
                     },
                     {
                         "items": {
-                            "type": "integer"
+                            "format": "binary",
+                            "type": "string"
                         },
                         "type": "array"
                     }
@@ -164,17 +180,20 @@
     "RegisterPacket": {
         "properties": {
             "from_pid": {
+                "format": "binary",
                 "title": "From Pid",
-                "type": "integer"
+                "type": "string"
             },
             "to_pid": {
                 "anyOf": [
                     {
-                        "type": "integer"
+                        "format": "binary",
+                        "type": "string"
                     },
                     {
                         "items": {
-                            "type": "integer"
+                            "format": "binary",
+                            "type": "string"
                         },
                         "type": "array"
                     }
@@ -201,17 +220,20 @@
     "DisconnectPacket": {
         "properties": {
             "from_pid": {
+                "format": "binary",
                 "title": "From Pid",
-                "type": "integer"
+                "type": "string"
             },
             "to_pid": {
                 "anyOf": [
                     {
-                        "type": "integer"
+                        "format": "binary",
+                        "type": "string"
                     },
                     {
                         "items": {
-                            "type": "integer"
+                            "format": "binary",
+                            "type": "string"
                         },
                         "type": "array"
                     }

@@ -7,13 +7,13 @@ from server.constants import EVERYONE, ONLY_CLIENT, ONLY_PROTO
 from typing import Callable, Coroutine, Any
 
 class GameProtocol:
-    def __init__(self, websocket: ws.WebSocketServerProtocol, pid: int, 
+    def __init__(self, websocket: ws.WebSocketServerProtocol, pid: bytes, 
                  global_send_queue_put_ref: Callable[..., Coroutine[Any, Any, None]], 
                  disconnect_ref: Callable) -> None:
         """WARNING: This class must only be instantiated from within the server.app.ServerApp class"""
-        logging.debug(f"Assigned id {pid} to new connection")
+        logging.debug(f"Assigned id {pid.hex()} to new connection")
         self._websocket: ws.WebSocketServerProtocol = websocket
-        self._pid: int = pid
+        self._pid: bytes = pid
         self._state: st.BaseState = st.EntryState(self._pid)
         self._local_receive_packet_queue: asyncio.Queue[pck.BasePacket] = asyncio.Queue()
         self._queue_global_send: Callable[..., Coroutine[Any, Any, None]] = global_send_queue_put_ref
@@ -24,9 +24,13 @@ class GameProtocol:
         await self._listen_websocket()
 
     async def _listen_websocket(self) -> None:
-        logging.debug(f"Starting protocol for id {self._pid}")
+        logging.debug(f"Starting protocol for id {self._pid.hex()}")
 
         async for message in self._websocket:
+            if not isinstance(message, bytes):
+                logging.error(f"Received non-bytes message: {message}")
+                continue
+            
             try:
                 p: pck.BasePacket = pck.deserialize(message)
             except pck.MalformedPacketError as e:
@@ -44,7 +48,7 @@ class GameProtocol:
             
             await self._queue_global_send(p)
 
-        logging.debug(f"Protocol for id {self._pid} stopped")
+        logging.debug(f"Protocol for id {self._pid.hex()} stopped")
         await self._disconnect(self, "Client disconnected")
 
     async def _process_packets(self) -> None:

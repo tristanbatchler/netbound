@@ -1,21 +1,29 @@
 import json
+import msgpack
 from pydantic import BaseModel, ValidationError
 from typing import Any, Type, Optional
 
 DEFINITIONS_FILE: str = "shared/packet/definitions.json"
 
 class BasePacket(BaseModel):
-    from_pid: int
-    to_pid: int | list[int]
+    from_pid: bytes
+    to_pid: bytes | list[bytes]
 
     def serialize(self) -> bytes:
-        type_str: str = self.__class__.__name__.removesuffix("Packet").lower()
-        return json.dumps({
-            type_str: self.__dict__ 
-        }).encode("utf-8")
+        data = {}
+        packet_name = self.__class__.__name__.removesuffix("Packet").title()
+        m_dump = self.model_dump()
+        data[packet_name] = m_dump
+        return msgpack.packb(data, use_bin_type=True)
     
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.__dict__})"
+        d: dict[str, Any] = self.__dict__.copy()
+        d["from_pid"] = d["from_pid"].hex()
+        if isinstance(self.to_pid, list):
+            d["to_pid"] = [x.hex() for x in d["to_pid"]]
+        else:
+            d["to_pid"] = d["to_pid"].hex()
+        return f"{self.__class__.__name__}{d}"
     
     def __str__(self) -> str:
         return self.__repr__()
@@ -27,7 +35,7 @@ class DenyPacket(BasePacket):
     reason: Optional[str] = None
 
 class PIDPacket(BasePacket):
-    pid: int
+    pid: bytes
 
 class LoginPacket(BasePacket):
     username: str
@@ -46,15 +54,20 @@ class MalformedPacketError(ValueError):
 class UnknownPacketError(ValueError):
     pass
 
-def deserialize(packet_: str | bytes) -> BasePacket:
+def deserialize(packet_: bytes) -> BasePacket:
     try:
-        packet_dict: dict = json.loads(packet_)
-    except json.JSONDecodeError:
-        raise MalformedPacketError("Invalid JSON")
+        packet_dict: dict[str, Any] = msgpack.unpackb(packet_, raw=False)
+    except msgpack.StackError:
+        raise MalformedPacketError("Packet too nested to unpack")
+    except msgpack.ExtraData:
+        raise MalformedPacketError("Extra data was sent with the packet")
+    except msgpack.FormatError:
+        raise MalformedPacketError("Packet is malformed")
+    except msgpack.UnpackValueError:
+        raise MalformedPacketError("Packet has missing data")
 
     if len(packet_dict) == 0:
         raise MalformedPacketError("Empty packet")
-
 
     packet_name: Any = list(packet_dict.keys())[0]
     if not isinstance(packet_name, str):
