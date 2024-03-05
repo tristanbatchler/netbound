@@ -3,18 +3,18 @@ import logging
 import websockets as ws
 import server.packet as pck
 import server.state as st
-from server.constants import EVERYONE, ONLY_CLIENT, ONLY_PROTO
 from typing import Callable, Coroutine, Any
 
 class GameProtocol:
     def __init__(self, websocket: ws.WebSocketServerProtocol, pid: bytes, disconnect_ref: Callable) -> None:
         """WARNING: This class must only be instantiated from within the server.app.ServerApp class"""
-        logging.debug(f"Assigned id {pid.hex()} to new connection")
+        logging.debug(f"Assigned id {pid.hex()[:8]} to new connection")
         self._websocket: ws.WebSocketServerProtocol = websocket
         self._pid: bytes = pid
         self._local_receive_packet_queue: asyncio.Queue[pck.BasePacket] = asyncio.Queue()
-        self._local_send_packet_queue: asyncio.Queue[pck.BasePacket] = asyncio.Queue()
-        self._state: st.BaseState = st.EntryState(self._pid, self._change_state, self._local_send_packet_queue.put)
+        self._local_protos_send_packet_queue: asyncio.Queue[pck.BasePacket] = asyncio.Queue()
+        self._local_client_send_packet_queue: asyncio.Queue[pck.BasePacket] = asyncio.Queue()
+        self._state: st.BaseState = st.EntryState(self._pid, self._change_state, self._local_protos_send_packet_queue.put, self._local_client_send_packet_queue.put)
         self._disconnect: Callable = disconnect_ref
 
     def __repr__(self) -> str:
@@ -24,11 +24,11 @@ class GameProtocol:
         return self.__repr__()
 
     async def _start(self) -> None:
-        await self._local_send_packet_queue.put(pck.PIDPacket(pid=self._pid, from_pid=self._pid, to_pid=ONLY_CLIENT))
+        await self._local_client_send_packet_queue.put(pck.PIDPacket(pid=self._pid, from_pid=self._pid))
         await self._listen_websocket()
 
     async def _listen_websocket(self) -> None:
-        logging.debug(f"Starting protocol for id {self._pid.hex()}")
+        logging.debug(f"Starting protocol for id {self._pid.hex()[:8]}")
 
         async for message in self._websocket:
             if not isinstance(message, bytes):
@@ -54,7 +54,7 @@ class GameProtocol:
             
             await self._local_receive_packet_queue.put(p)
 
-        logging.debug(f"Protocol for id {self._pid.hex()} stopped")
+        logging.debug(f"{self} stopped")
         await self._disconnect(self, "Client disconnected")
 
     def _change_state(self, new_state: st.BaseState) -> None:

@@ -18,8 +18,12 @@
                             "type": "string"
                         },
                         "type": "array"
+                    },
+                    {
+                        "type": "null"
                     }
                 ],
+                "default": null,
                 "title": "To Pid"
             },
             "exclude_sender": {
@@ -36,8 +40,7 @@
             }
         },
         "required": [
-            "from_pid",
-            "to_pid"
+            "from_pid"
         ],
         "type": "object"
     },
@@ -60,8 +63,12 @@
                             "type": "string"
                         },
                         "type": "array"
+                    },
+                    {
+                        "type": "null"
                     }
                 ],
+                "default": null,
                 "title": "To Pid"
             },
             "exclude_sender": {
@@ -78,8 +85,7 @@
             }
         },
         "required": [
-            "from_pid",
-            "to_pid"
+            "from_pid"
         ],
         "type": "object"
     },
@@ -102,8 +108,12 @@
                             "type": "string"
                         },
                         "type": "array"
+                    },
+                    {
+                        "type": "null"
                     }
                 ],
+                "default": null,
                 "title": "To Pid"
             },
             "exclude_sender": {
@@ -132,8 +142,7 @@
             }
         },
         "required": [
-            "from_pid",
-            "to_pid"
+            "from_pid"
         ],
         "type": "object"
     },
@@ -156,8 +165,12 @@
                             "type": "string"
                         },
                         "type": "array"
+                    },
+                    {
+                        "type": "null"
                     }
                 ],
+                "default": null,
                 "title": "To Pid"
             },
             "exclude_sender": {
@@ -180,7 +193,6 @@
         },
         "required": [
             "from_pid",
-            "to_pid",
             "pid"
         ],
         "type": "object"
@@ -204,8 +216,12 @@
                             "type": "string"
                         },
                         "type": "array"
+                    },
+                    {
+                        "type": "null"
                     }
                 ],
+                "default": null,
                 "title": "To Pid"
             },
             "exclude_sender": {
@@ -231,7 +247,6 @@
         },
         "required": [
             "from_pid",
-            "to_pid",
             "username",
             "password"
         ],
@@ -256,8 +271,12 @@
                             "type": "string"
                         },
                         "type": "array"
+                    },
+                    {
+                        "type": "null"
                     }
                 ],
+                "default": null,
                 "title": "To Pid"
             },
             "exclude_sender": {
@@ -283,7 +302,6 @@
         },
         "required": [
             "from_pid",
-            "to_pid",
             "username",
             "password"
         ],
@@ -308,8 +326,12 @@
                             "type": "string"
                         },
                         "type": "array"
+                    },
+                    {
+                        "type": "null"
                     }
                 ],
+                "default": null,
                 "title": "To Pid"
             },
             "exclude_sender": {
@@ -331,7 +353,6 @@
         },
         "required": [
             "from_pid",
-            "to_pid",
             "reason"
         ],
         "type": "object"
@@ -355,8 +376,12 @@
                             "type": "string"
                         },
                         "type": "array"
+                    },
+                    {
+                        "type": "null"
                     }
                 ],
+                "default": null,
                 "title": "To Pid"
             },
             "exclude_sender": {
@@ -378,7 +403,6 @@
         },
         "required": [
             "from_pid",
-            "to_pid",
             "message"
         ],
         "type": "object"

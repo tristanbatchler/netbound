@@ -6,7 +6,7 @@ import websockets as ws
 from uuid import uuid4
 from server.packet import BasePacket, DisconnectPacket, PIDPacket
 from server.app.protocol import GameProtocol
-from server.constants import EVERYONE, ONLY_CLIENT, ONLY_PROTO
+from server.constants import EVERYONE
 
 class ServerApp:
     def __init__(self, host: str, port: int, ticks_per_second: int) -> None:
@@ -14,7 +14,7 @@ class ServerApp:
         self._port: int = port
         self._tick_rate: float = 1 / ticks_per_second
         self._connected_protocols: dict[bytes, GameProtocol] = {}
-        self._global_packet_queue: asyncio.Queue[BasePacket] = asyncio.Queue()
+        self._global_protos_packet_queue: asyncio.Queue[BasePacket] = asyncio.Queue()
 
     async def start(self) -> None:
         logging.info(f"Starting server on {self._host}:{self._port}")
@@ -46,18 +46,18 @@ class ServerApp:
 
 
     async def _dispatch_packets(self) -> None:
-        while not self._global_packet_queue.empty():
-            p: BasePacket = await self._global_packet_queue.get()
+        while not self._global_protos_packet_queue.empty():
+            p: BasePacket = await self._global_protos_packet_queue.get()
             logging.debug(f"Dispatching {p.__class__.__name__} packet")
             
             to_pids: list[bytes] = p.to_pid if isinstance(p.to_pid, list) else [p.to_pid]
 
             for to_pid in to_pids:
                 if to_pid == p.from_pid:
-                    logging.error(f"Packet {p} was dropped because its direction is ambiguous")
+                    logging.error(f"Packet {p} was dropped because its direction is ambiguous in the proto-to-proto queue")
                     continue
 
-                elif p.from_pid in (EVERYONE, ONLY_CLIENT, ONLY_PROTO):
+                elif p.from_pid == EVERYONE:
                     logging.error(f"Packet {p} was dropped because its source PID must be specific")
                     continue
 
@@ -70,22 +70,7 @@ class ServerApp:
                         if p.exclude_sender and proto._pid == p.from_pid:
                             continue
                         await proto._local_receive_packet_queue.put(p)
-                        logging.debug(f"Added {p.__class__.__name__} packet to protocol {proto._pid.hex()}'s receive queue")
-                        
-                elif to_pid == ONLY_PROTO:
-                    # Assume the packet's destination PID is that of its source
-                    if to_proto := self._connected_protocols.get(p.from_pid):
-                        await to_proto._local_receive_packet_queue.put(p)
-                    else:
-                        logging.error(f"Packet {p} was sent to a disconnected protocol")
-                        continue
-
-                elif to_pid == ONLY_CLIENT:
-                    if from_proto := self._connected_protocols.get(p.from_pid):
-                        await self._send_to_client(from_proto, p)
-                    else:
-                        logging.error(f"Packet {p} was sent from a disconnected protocol")
-                        continue 
+                        logging.debug(f"Added {p.__class__.__name__} packet to {proto}'s receive queue")
                 
                 # If we get to here, destination should be a specific PID
                 elif specific_to_proto  := self._connected_protocols.get(to_pid):
@@ -97,12 +82,17 @@ class ServerApp:
     async def tick(self) -> None:
         # Grab the top outbound packet from each protocol and put it in the global queue
         for _, proto in self._connected_protocols.items():
-            if not proto._local_send_packet_queue.empty():
-                p: BasePacket = await proto._local_send_packet_queue.get()
-                logging.debug(f"Popped {p.__class__.__name__} packet from protocol {proto._pid.hex()}'s send queue")
-                await self._global_packet_queue.put(p)
+            if not proto._local_protos_send_packet_queue.empty():
+                p_to_other: BasePacket = await proto._local_protos_send_packet_queue.get()
+                logging.debug(f"Popped {p_to_other.__class__.__name__} packet from {proto}'s proto-to-proto send queue")
+                await self._global_protos_packet_queue.put(p_to_other)
+            
+            if not proto._local_client_send_packet_queue.empty():
+                p_to_client: BasePacket = await proto._local_client_send_packet_queue.get()
+                logging.debug(f"Popped {p_to_client.__class__.__name__} packet from {proto}'s client send queue")
+                await self._send_to_client(proto, p_to_client)
 
-        # Dispatch all packets in the global queue to their respective protocols' inbound queues
+        # Dispatch all packets in the global proto-to-proto queue to their respective protocols' inbound queues
         await self._dispatch_packets()
         
         # Process all inbound packets for each protocol
@@ -110,9 +100,9 @@ class ServerApp:
             await proto._process_packets()
 
     async def _disconnect_protocol(self, proto: GameProtocol, reason: str) -> None:
-        logging.info(f"Disconnecting protocol {proto._pid.hex()}: {reason}")
+        logging.info(f"Disconnecting {proto}: {reason}")
         self._connected_protocols.pop(proto._pid)
-        await self._global_packet_queue.put(DisconnectPacket(reason=reason, from_pid=proto._pid, to_pid=EVERYONE))
+        await self._global_protos_packet_queue.put(DisconnectPacket(reason=reason, from_pid=proto._pid, to_pid=EVERYONE))
 
     async def _send_to_client(self, proto: GameProtocol, p: BasePacket) -> None:
         try:

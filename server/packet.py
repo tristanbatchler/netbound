@@ -1,6 +1,6 @@
 import json
 import msgpack
-from server.constants import EVERYONE, ONLY_CLIENT, ONLY_PROTO
+from server.constants import EVERYONE
 from pydantic import BaseModel, ValidationError
 from typing import Any, Type, Optional
 
@@ -8,7 +8,8 @@ DEFINITIONS_FILE: str = "shared/packet/definitions.json"
 
 class BasePacket(BaseModel):
     from_pid: bytes
-    to_pid: bytes | list[bytes]
+    # If to_pid is None, it is either from the client to its protocol or vice-versa
+    to_pid: Optional[bytes | list[bytes]] = None
     exclude_sender: Optional[bool] = False
 
     def serialize(self) -> bytes:
@@ -19,14 +20,15 @@ class BasePacket(BaseModel):
         return msgpack.packb(data, use_bin_type=True)
     
     def __repr__(self) -> str:
-        d: dict[str, Any] = self.__dict__.copy()
-        d["from_pid"] = self.from_pid.hex()[:8]
-
         TO_PID: str = "to_pid"
-        if self.to_pid in (EVERYONE, ONLY_CLIENT, ONLY_PROTO):
-            d[TO_PID] = "EVERYONE" if self.to_pid == EVERYONE \
-                else f"{self.from_pid.hex()[:8].upper()}'s CLIENT" if self.to_pid == ONLY_CLIENT \
-                else f"{self.from_pid.hex()[:8].upper()}'s PROTOCOL"
+        FROM_PID: str = "from_pid"
+        d: dict[str, Any] = self.__dict__.copy()
+        d[FROM_PID] = self.from_pid.hex()[:8]
+
+        if self.to_pid == EVERYONE:
+            d[TO_PID] = "EVERYONE"
+        elif self.to_pid is None:
+            d[TO_PID] = d[FROM_PID]
         elif isinstance(self.to_pid, list):
             d[TO_PID] = [x.hex()[:8] for x in self.to_pid]
         else:

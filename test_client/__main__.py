@@ -6,8 +6,6 @@ from typing import Literal
 tb_params: tuple[int, Literal["big", "little"]] = (16, "big")
 
 EVERYONE: bytes = (0).to_bytes(*tb_params)
-ONLY_CLIENT: bytes = (1).to_bytes(*tb_params)
-ONLY_PROTO: bytes = (2).to_bytes(*tb_params)
 
 class Client:
     def __init__(self):
@@ -29,14 +27,14 @@ class Client:
                 if self.my_state == "Entry":
                     if p_type == "Pid":
                         self.my_pid = p_data["pid"]
-                        print(f"Assigned id {self.my_pid.hex()}")
+                        print(f"Assigned id {self.my_pid.hex()[:8]}")
 
                         await self.websocket.send(msgpack.packb({
                             "Login": {
                                 "username": self.my_pid.hex()[:8],
                                 "password": "123",
                                 "from_pid": self.my_pid,
-                                "to_pid": ONLY_PROTO
+                                "to_pid": self.my_pid
                             }
                         }, use_bin_type=True))
 
