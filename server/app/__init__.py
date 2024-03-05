@@ -81,7 +81,7 @@ class ServerApp:
 
     async def tick(self) -> None:
         # Grab the top outbound packet from each protocol and put it in the global queue
-        for _, proto in self._connected_protocols.items():
+        for _, proto in self._connected_protocols.copy().items():
             if not proto._local_protos_send_packet_queue.empty():
                 p_to_other: BasePacket = await proto._local_protos_send_packet_queue.get()
                 logging.debug(f"Popped {p_to_other.__class__.__name__} packet from {proto}'s proto-to-proto send queue")
@@ -96,7 +96,7 @@ class ServerApp:
         await self._dispatch_packets()
         
         # Process all inbound packets for each protocol
-        for _, proto in self._connected_protocols.items():
+        for _, proto in self._connected_protocols.copy().items():
             await proto._process_packets()
 
     async def _disconnect_protocol(self, proto: GameProtocol, reason: str) -> None:
