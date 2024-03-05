@@ -9,7 +9,7 @@ DEFINITIONS_FILE: str = "shared/packet/definitions.json"
 class BasePacket(BaseModel):
     from_pid: bytes
     # If to_pid is None, it is either from the client to its protocol or vice-versa
-    to_pid: Optional[bytes | list[bytes]] = None
+    to_pid: Optional[bytes | list[Optional[bytes]]] = None
     exclude_sender: Optional[bool] = False
 
     def serialize(self) -> bytes:

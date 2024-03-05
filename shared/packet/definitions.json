@@ -14,8 +14,15 @@
                     },
                     {
                         "items": {
-                            "format": "binary",
-                            "type": "string"
+                            "anyOf": [
+                                {
+                                    "format": "binary",
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
                         },
                         "type": "array"
                     },
@@ -59,8 +66,15 @@
                     },
                     {
                         "items": {
-                            "format": "binary",
-                            "type": "string"
+                            "anyOf": [
+                                {
+                                    "format": "binary",
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
                         },
                         "type": "array"
                     },
@@ -104,8 +118,15 @@
                     },
                     {
                         "items": {
-                            "format": "binary",
-                            "type": "string"
+                            "anyOf": [
+                                {
+                                    "format": "binary",
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
                         },
                         "type": "array"
                     },
@@ -161,8 +182,15 @@
                     },
                     {
                         "items": {
-                            "format": "binary",
-                            "type": "string"
+                            "anyOf": [
+                                {
+                                    "format": "binary",
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
                         },
                         "type": "array"
                     },
@@ -212,8 +240,15 @@
                     },
                     {
                         "items": {
-                            "format": "binary",
-                            "type": "string"
+                            "anyOf": [
+                                {
+                                    "format": "binary",
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
                         },
                         "type": "array"
                     },
@@ -257,8 +292,15 @@
                     },
                     {
                         "items": {
-                            "format": "binary",
-                            "type": "string"
+                            "anyOf": [
+                                {
+                                    "format": "binary",
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
                         },
                         "type": "array"
                     },
@@ -307,8 +349,15 @@
                     },
                     {
                         "items": {
-                            "format": "binary",
-                            "type": "string"
+                            "anyOf": [
+                                {
+                                    "format": "binary",
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
                         },
                         "type": "array"
                     },
@@ -362,8 +411,15 @@
                     },
                     {
                         "items": {
-                            "format": "binary",
-                            "type": "string"
+                            "anyOf": [
+                                {
+                                    "format": "binary",
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
                         },
                         "type": "array"
                     },
@@ -417,8 +473,15 @@
                     },
                     {
                         "items": {
-                            "format": "binary",
-                            "type": "string"
+                            "anyOf": [
+                                {
+                                    "format": "binary",
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
                         },
                         "type": "array"
                     },
@@ -467,8 +530,15 @@
                     },
                     {
                         "items": {
-                            "format": "binary",
-                            "type": "string"
+                            "anyOf": [
+                                {
+                                    "format": "binary",
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
                         },
                         "type": "array"
                     },

@@ -7,6 +7,7 @@ from uuid import uuid4
 from server.packet import BasePacket, DisconnectPacket, PIDPacket
 from server.app.protocol import GameProtocol
 from server.constants import EVERYONE
+from typing import Optional
 
 class ServerApp:
     def __init__(self, host: str, port: int, ticks_per_second: int) -> None:
@@ -50,9 +51,15 @@ class ServerApp:
             p: BasePacket = await self._global_protos_packet_queue.get()
             logging.debug(f"Dispatching {p.__class__.__name__} packet")
             
-            to_pids: list[bytes] = p.to_pid if isinstance(p.to_pid, list) else [p.to_pid]
+            to_pids: list[Optional[bytes]] = p.to_pid if isinstance(p.to_pid, list) else [p.to_pid]
 
             for to_pid in to_pids:
+                if to_pid is None:
+                    logging.error(f"Packet {p} in the global protos queue was dropped because its "
+                                  "destination PID is None. If you are trying to send to the "
+                                  "client, use the local client queue instead")
+                    continue
+
                 if to_pid == p.from_pid:
                     logging.error(f"Packet {p} was dropped because its direction is ambiguous in the proto-to-proto queue")
                     continue

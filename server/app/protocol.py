@@ -1,13 +1,15 @@
+from __future__ import annotations
 import asyncio
 import logging
 import websockets as ws
 import server.packet as pck
 import server.state as st
-from typing import Callable
+from typing import Callable, Coroutine, Any
 from server.constants import EVERYONE
 
 class GameProtocol:
-    def __init__(self, websocket: ws.WebSocketServerProtocol, pid: bytes, disconnect_ref: Callable) -> None:
+    def __init__(self, websocket: ws.WebSocketServerProtocol, pid: bytes, 
+                 disconnect_ref: Callable[[GameProtocol, str], Coroutine[Any, Any, None]]) -> None:
         """WARNING: This class must only be instantiated from within the server.app.ServerApp class"""
         logging.debug(f"Assigned id {pid.hex()[:8]} to new connection")
         self._websocket: ws.WebSocketServerProtocol = websocket
@@ -50,10 +52,8 @@ class GameProtocol:
                 continue
 
             logging.debug(f"Received packet: {p}")
-
-            if isinstance(p, pck.ChatPacket):
-                logging.debug(f"Chat packet received: {p.message}")
             
+            # Store the packet in our local receive queue for processing next tick
             await self._local_receive_packet_queue.put(p)
 
         logging.debug(f"{self} stopped")
