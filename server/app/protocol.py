@@ -3,7 +3,7 @@ import logging
 import websockets as ws
 import server.packet as pck
 import server.state as st
-from typing import Callable, Coroutine, Any
+from typing import Callable
 
 class GameProtocol:
     def __init__(self, websocket: ws.WebSocketServerProtocol, pid: bytes, disconnect_ref: Callable) -> None:
