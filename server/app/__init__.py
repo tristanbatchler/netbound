@@ -40,14 +40,15 @@ class ServerApp:
 
     async def handle_connection(self, websocket: ws.WebSocketServerProtocol) -> None:
         logging.info(f"New connection from {websocket.remote_address}")
-        proto: GameProtocol = GameProtocol(websocket, uuid4().bytes, self._global_packet_queue.put, self._disconnect_protocol)
+        proto: GameProtocol = GameProtocol(websocket, uuid4().bytes, self._disconnect_protocol)
         self._connected_protocols[proto._pid] = proto
         await proto._start()
 
 
     async def _dispatch_packets(self) -> None:
         while not self._global_packet_queue.empty():
-            p: BasePacket = self._global_packet_queue.get_nowait()
+            p: BasePacket = await self._global_packet_queue.get()
+            logging.debug(f"Dispatching {p.__class__.__name__} packet")
             
             to_pids: list[bytes] = p.to_pid if isinstance(p.to_pid, list) else [p.to_pid]
 
@@ -56,13 +57,20 @@ class ServerApp:
                     logging.error(f"Packet {p} was dropped because its direction is ambiguous")
                     continue
 
-                elif to_pid in (EVERYONE, ONLY_CLIENT, ONLY_PROTO) and p.from_pid in (EVERYONE, ONLY_CLIENT, ONLY_PROTO):
-                    logging.error(f"Packet {p} was dropped because its source and destination are incompatible")
+                elif p.from_pid in (EVERYONE, ONLY_CLIENT, ONLY_PROTO):
+                    logging.error(f"Packet {p} was dropped because its source PID must be specific")
+                    continue
+
+                elif p.exclude_sender and p.to_pid != EVERYONE:
+                    logging.error(f"Packet {p} was dropped because exclude_sender is only compatible with the EVERYONE destination")
                     continue
 
                 elif to_pid == EVERYONE:
                     for _, proto in self._connected_protocols.items():
-                        await self._send_to_client(proto, p)
+                        if p.exclude_sender and proto._pid == p.from_pid:
+                            continue
+                        await proto._local_receive_packet_queue.put(p)
+                        logging.debug(f"Added {p.__class__.__name__} packet to protocol {proto._pid.hex()}'s receive queue")
                         
                 elif to_pid == ONLY_PROTO:
                     # Assume the packet's destination PID is that of its source
@@ -70,7 +78,6 @@ class ServerApp:
                         await to_proto._local_receive_packet_queue.put(p)
                     else:
                         logging.error(f"Packet {p} was sent to a disconnected protocol")
-                        logging.error("Poop1")
                         continue
 
                 elif to_pid == ONLY_CLIENT:
@@ -78,7 +85,6 @@ class ServerApp:
                         await self._send_to_client(from_proto, p)
                     else:
                         logging.error(f"Packet {p} was sent from a disconnected protocol")
-                        logging.error("Poop2")
                         continue 
                 
                 # If we get to here, destination should be a specific PID
@@ -86,11 +92,20 @@ class ServerApp:
                     await specific_to_proto._local_receive_packet_queue.put(p)
                 else:
                     logging.error(f"Packet {p} was sent to a disconnected protocol")
-                    logging.error("Poop3")
 
 
     async def tick(self) -> None:
+        # Grab the top outbound packet from each protocol and put it in the global queue
+        for _, proto in self._connected_protocols.items():
+            if not proto._local_send_packet_queue.empty():
+                p: BasePacket = await proto._local_send_packet_queue.get()
+                logging.debug(f"Popped {p.__class__.__name__} packet from protocol {proto._pid.hex()}'s send queue")
+                await self._global_packet_queue.put(p)
+
+        # Dispatch all packets in the global queue to their respective protocols' inbound queues
         await self._dispatch_packets()
+        
+        # Process all inbound packets for each protocol
         for _, proto in self._connected_protocols.items():
             await proto._process_packets()
 

@@ -7,20 +7,24 @@ from server.constants import EVERYONE, ONLY_CLIENT, ONLY_PROTO
 from typing import Callable, Coroutine, Any
 
 class GameProtocol:
-    def __init__(self, websocket: ws.WebSocketServerProtocol, pid: bytes, 
-                 global_send_queue_put_ref: Callable[..., Coroutine[Any, Any, None]], 
-                 disconnect_ref: Callable) -> None:
+    def __init__(self, websocket: ws.WebSocketServerProtocol, pid: bytes, disconnect_ref: Callable) -> None:
         """WARNING: This class must only be instantiated from within the server.app.ServerApp class"""
         logging.debug(f"Assigned id {pid.hex()} to new connection")
         self._websocket: ws.WebSocketServerProtocol = websocket
         self._pid: bytes = pid
-        self._state: st.BaseState = st.EntryState(self._pid)
         self._local_receive_packet_queue: asyncio.Queue[pck.BasePacket] = asyncio.Queue()
-        self._queue_global_send: Callable[..., Coroutine[Any, Any, None]] = global_send_queue_put_ref
+        self._local_send_packet_queue: asyncio.Queue[pck.BasePacket] = asyncio.Queue()
+        self._state: st.BaseState = st.EntryState(self._pid, self._change_state, self._local_send_packet_queue.put)
         self._disconnect: Callable = disconnect_ref
 
+    def __repr__(self) -> str:
+        return f"GameProtocol({self._pid.hex()[:8]})"
+    
+    def __str__(self) -> str:
+        return self.__repr__()
+
     async def _start(self) -> None:
-        await self._queue_global_send(pck.PIDPacket(pid=self._pid, from_pid=self._pid, to_pid=ONLY_CLIENT))
+        await self._local_send_packet_queue.put(pck.PIDPacket(pid=self._pid, from_pid=self._pid, to_pid=ONLY_CLIENT))
         await self._listen_websocket()
 
     async def _listen_websocket(self) -> None:
@@ -45,14 +49,19 @@ class GameProtocol:
 
             logging.debug(f"Received packet: {p}")
 
+            if isinstance(p, pck.ChatPacket):
+                logging.debug(f"Chat packet received: {p.message}")
             
-            await self._queue_global_send(p)
+            await self._local_receive_packet_queue.put(p)
 
         logging.debug(f"Protocol for id {self._pid.hex()} stopped")
         await self._disconnect(self, "Client disconnected")
 
+    def _change_state(self, new_state: st.BaseState) -> None:
+        self._state = new_state
+
     async def _process_packets(self) -> None:
         while not self._local_receive_packet_queue.empty():
-            p: pck.BasePacket = self._local_receive_packet_queue.get_nowait()
-            self._state.handle_packet(p)
+            p: pck.BasePacket = await self._local_receive_packet_queue.get()
+            await self._state.handle_packet(p)
             logging.debug(f"Processed packet: {p}")

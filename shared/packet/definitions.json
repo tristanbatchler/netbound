@@ -21,6 +21,18 @@
                     }
                 ],
                 "title": "To Pid"
+            },
+            "exclude_sender": {
+                "anyOf": [
+                    {
+                        "type": "boolean"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ],
+                "default": false,
+                "title": "Exclude Sender"
             }
         },
         "required": [
@@ -51,6 +63,18 @@
                     }
                 ],
                 "title": "To Pid"
+            },
+            "exclude_sender": {
+                "anyOf": [
+                    {
+                        "type": "boolean"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ],
+                "default": false,
+                "title": "Exclude Sender"
             }
         },
         "required": [
@@ -81,6 +105,18 @@
                     }
                 ],
                 "title": "To Pid"
+            },
+            "exclude_sender": {
+                "anyOf": [
+                    {
+                        "type": "boolean"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ],
+                "default": false,
+                "title": "Exclude Sender"
             },
             "reason": {
                 "anyOf": [
@@ -124,6 +160,18 @@
                 ],
                 "title": "To Pid"
             },
+            "exclude_sender": {
+                "anyOf": [
+                    {
+                        "type": "boolean"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ],
+                "default": false,
+                "title": "Exclude Sender"
+            },
             "pid": {
                 "format": "binary",
                 "title": "Pid",
@@ -159,6 +207,18 @@
                     }
                 ],
                 "title": "To Pid"
+            },
+            "exclude_sender": {
+                "anyOf": [
+                    {
+                        "type": "boolean"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ],
+                "default": false,
+                "title": "Exclude Sender"
             },
             "username": {
                 "title": "Username",
@@ -200,6 +260,18 @@
                 ],
                 "title": "To Pid"
             },
+            "exclude_sender": {
+                "anyOf": [
+                    {
+                        "type": "boolean"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ],
+                "default": false,
+                "title": "Exclude Sender"
+            },
             "username": {
                 "title": "Username",
                 "type": "string"
@@ -240,6 +312,18 @@
                 ],
                 "title": "To Pid"
             },
+            "exclude_sender": {
+                "anyOf": [
+                    {
+                        "type": "boolean"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ],
+                "default": false,
+                "title": "Exclude Sender"
+            },
             "reason": {
                 "title": "Reason",
                 "type": "string"
@@ -249,6 +333,53 @@
             "from_pid",
             "to_pid",
             "reason"
+        ],
+        "type": "object"
+    },
+    "ChatPacket": {
+        "properties": {
+            "from_pid": {
+                "format": "binary",
+                "title": "From Pid",
+                "type": "string"
+            },
+            "to_pid": {
+                "anyOf": [
+                    {
+                        "format": "binary",
+                        "type": "string"
+                    },
+                    {
+                        "items": {
+                            "format": "binary",
+                            "type": "string"
+                        },
+                        "type": "array"
+                    }
+                ],
+                "title": "To Pid"
+            },
+            "exclude_sender": {
+                "anyOf": [
+                    {
+                        "type": "boolean"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ],
+                "default": false,
+                "title": "Exclude Sender"
+            },
+            "message": {
+                "title": "Message",
+                "type": "string"
+            }
+        },
+        "required": [
+            "from_pid",
+            "to_pid",
+            "message"
         ],
         "type": "object"
     }
