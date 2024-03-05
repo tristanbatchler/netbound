@@ -4,6 +4,7 @@ import websockets as ws
 import server.packet as pck
 import server.state as st
 from typing import Callable
+from server.constants import EVERYONE
 
 class GameProtocol:
     def __init__(self, websocket: ws.WebSocketServerProtocol, pid: bytes, disconnect_ref: Callable) -> None:
@@ -25,6 +26,7 @@ class GameProtocol:
 
     async def _start(self) -> None:
         await self._local_client_send_packet_queue.put(pck.PIDPacket(pid=self._pid, from_pid=self._pid))
+        await self._local_protos_send_packet_queue.put(pck.ConnectPacket(from_pid=self._pid, to_pid=EVERYONE))
         await self._listen_websocket()
 
     async def _listen_websocket(self) -> None:

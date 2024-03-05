@@ -17,12 +17,16 @@ class Client:
         self.websocket = await ws.connect("ws://localhost:8081")
         print("Connected")
 
+
     async def listen_websocket(self):
         try:
             async for message in self.websocket:
                 packet = msgpack.unpackb(message, raw=False)
                 p_type = list(packet.keys())[0]
                 p_data = packet[p_type]
+
+                if p_type == "Hello":
+                    print(f"Hello from {p_data['from_pid'].hex()[:8]} with favourite number {p_data['favourite_number']}")
 
                 if self.my_state == "Entry":
                     if p_type == "Pid":

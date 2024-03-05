@@ -197,6 +197,101 @@
         ],
         "type": "object"
     },
+    "ConnectPacket": {
+        "properties": {
+            "from_pid": {
+                "format": "binary",
+                "title": "From Pid",
+                "type": "string"
+            },
+            "to_pid": {
+                "anyOf": [
+                    {
+                        "format": "binary",
+                        "type": "string"
+                    },
+                    {
+                        "items": {
+                            "format": "binary",
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ],
+                "default": null,
+                "title": "To Pid"
+            },
+            "exclude_sender": {
+                "anyOf": [
+                    {
+                        "type": "boolean"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ],
+                "default": false,
+                "title": "Exclude Sender"
+            }
+        },
+        "required": [
+            "from_pid"
+        ],
+        "type": "object"
+    },
+    "HelloPacket": {
+        "properties": {
+            "from_pid": {
+                "format": "binary",
+                "title": "From Pid",
+                "type": "string"
+            },
+            "to_pid": {
+                "anyOf": [
+                    {
+                        "format": "binary",
+                        "type": "string"
+                    },
+                    {
+                        "items": {
+                            "format": "binary",
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ],
+                "default": null,
+                "title": "To Pid"
+            },
+            "exclude_sender": {
+                "anyOf": [
+                    {
+                        "type": "boolean"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ],
+                "default": false,
+                "title": "Exclude Sender"
+            },
+            "favourite_number": {
+                "title": "Favourite Number",
+                "type": "integer"
+            }
+        },
+        "required": [
+            "from_pid",
+            "favourite_number"
+        ],
+        "type": "object"
+    },
     "LoginPacket": {
         "properties": {
             "from_pid": {

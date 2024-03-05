@@ -1,9 +1,14 @@
 import logging
 from server.state import BaseState
-from server.packet import BasePacket, ChatPacket, DisconnectPacket, DenyPacket
+from server.packet import BasePacket, ChatPacket, DisconnectPacket, ConnectPacket, HelloPacket
 from server.constants import EVERYONE
+from random import randint
 
 class LoggedState(BaseState):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._favourite_number: int = randint(0, 100)
+
     async def handle_chat(self, p: ChatPacket) -> None:
         # If this came from our own client, forward it on
         if p.from_pid == self._pid:
@@ -16,3 +21,20 @@ class LoggedState(BaseState):
     async def handle_disconnect(self, p: DisconnectPacket) -> None:
         # Forward the disconnect packet to the client
         await self._queue_local_client_send(DisconnectPacket(from_pid=p.from_pid, reason=p.reason))
+
+    
+    async def handle_connect(self, p: BasePacket) -> None:
+        if p.from_pid == self._pid:
+            logging.warning(f"Received a ConnectPacket from our own client")
+            return
+        
+        # This came from someone else, so we should tell them about us
+        await self._queue_local_protos_send(HelloPacket(from_pid=self._pid, to_pid=p.from_pid, favourite_number=self._favourite_number))
+
+    async def handle_hello(self, p: HelloPacket) -> None:
+        if p.from_pid == self._pid:
+            logging.warning(f"Received a HelloPacket from our own client")
+            return
+
+        # Forward directly to our client
+        await self._queue_local_client_send(HelloPacket(from_pid=p.from_pid, favourite_number=p.favourite_number))

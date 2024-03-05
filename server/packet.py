@@ -47,6 +47,12 @@ class DenyPacket(BasePacket):
 class PIDPacket(BasePacket):
     pid: bytes
 
+class ConnectPacket(BasePacket):
+    ...
+    
+class HelloPacket(BasePacket):
+    favourite_number: int
+
 class LoginPacket(BasePacket):
     username: str
     password: str
