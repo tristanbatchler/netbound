@@ -30,7 +30,7 @@ class BasePacket(BaseModel):
         elif self.to_pid is None:
             d[TO_PID] = d[FROM_PID]
         elif isinstance(self.to_pid, list):
-            d[TO_PID] = [x.hex()[:8] for x in self.to_pid]
+            d[TO_PID] = [x.hex()[:8] if x else f"{self.from_pid.hex()[:8]}'s client" for x in self.to_pid]
         else:
             d[TO_PID] = self.to_pid.hex()[:8]
         return f"{self.__class__.__name__}{d}"
