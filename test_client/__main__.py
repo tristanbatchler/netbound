@@ -30,7 +30,7 @@ class Client:
 
                 if self.my_state == "Entry":
                     if p_type == "Pid":
-                        self.my_pid = p_data["pid"]
+                        self.my_pid = p_data["from_pid"]
                         print(f"Assigned id {self.my_pid.hex()[:8]}")
 
                         await self.websocket.send(msgpack.packb({

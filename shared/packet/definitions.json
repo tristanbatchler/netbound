@@ -212,64 +212,6 @@
                 ],
                 "default": false,
                 "title": "Exclude Sender"
-            },
-            "pid": {
-                "format": "binary",
-                "title": "Pid",
-                "type": "string"
-            }
-        },
-        "required": [
-            "from_pid",
-            "pid"
-        ],
-        "type": "object"
-    },
-    "ConnectPacket": {
-        "properties": {
-            "from_pid": {
-                "format": "binary",
-                "title": "From Pid",
-                "type": "string"
-            },
-            "to_pid": {
-                "anyOf": [
-                    {
-                        "format": "binary",
-                        "type": "string"
-                    },
-                    {
-                        "items": {
-                            "anyOf": [
-                                {
-                                    "format": "binary",
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ]
-                        },
-                        "type": "array"
-                    },
-                    {
-                        "type": "null"
-                    }
-                ],
-                "default": null,
-                "title": "To Pid"
-            },
-            "exclude_sender": {
-                "anyOf": [
-                    {
-                        "type": "boolean"
-                    },
-                    {
-                        "type": "null"
-                    }
-                ],
-                "default": false,
-                "title": "Exclude Sender"
             }
         },
         "required": [

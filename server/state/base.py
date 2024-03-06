@@ -5,13 +5,16 @@ import logging
 
 class BaseState:
     def __init__(self, pid: bytes, 
-                 change_state_ref: Callable[[BaseState], None], 
+                 change_state_ref: Callable[[BaseState], Coroutine[Any, Any, None]], 
                  queue_local_protos_send_ref: Callable[[BasePacket], Coroutine[Any, Any, None]],
                  queue_local_client_send_ref: Callable[[BasePacket], Coroutine[Any, Any, None]]) -> None:
         self._pid: bytes = pid
-        self._change_states: Callable[[BaseState], None] = change_state_ref
+        self._change_states: Callable[[BaseState], Coroutine[Any, Any, None]] = change_state_ref
         self._queue_local_protos_send: Callable[[BasePacket], Coroutine[Any, Any, None]] = queue_local_protos_send_ref
         self._queue_local_client_send: Callable[[BasePacket], Coroutine[Any, Any, None]] = queue_local_client_send_ref
+
+    async def on_transition(self) -> None:
+         pass
 
     async def handle_packet(self, p: BasePacket) -> None:
         packet_name: str = p.__class__.__name__

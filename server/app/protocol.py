@@ -4,7 +4,7 @@ import logging
 import websockets as ws
 import server.packet as pck
 import server.state as st
-from typing import Callable, Coroutine, Any
+from typing import Callable, Coroutine, Any, Optional
 from server.constants import EVERYONE
 
 class GameProtocol:
@@ -17,8 +17,8 @@ class GameProtocol:
         self._local_receive_packet_queue: asyncio.Queue[pck.BasePacket] = asyncio.Queue()
         self._local_protos_send_packet_queue: asyncio.Queue[pck.BasePacket] = asyncio.Queue()
         self._local_client_send_packet_queue: asyncio.Queue[pck.BasePacket] = asyncio.Queue()
-        self._state: st.BaseState = st.EntryState(self._pid, self._change_state, self._local_protos_send_packet_queue.put, self._local_client_send_packet_queue.put)
         self._disconnect: Callable = disconnect_ref
+        self._state: Optional[st.BaseState] = None
 
     def __repr__(self) -> str:
         return f"GameProtocol({self._pid.hex()[:8]})"
@@ -27,8 +27,7 @@ class GameProtocol:
         return self.__repr__()
 
     async def _start(self) -> None:
-        await self._local_client_send_packet_queue.put(pck.PIDPacket(pid=self._pid, from_pid=self._pid))
-        await self._local_protos_send_packet_queue.put(pck.ConnectPacket(from_pid=self._pid, to_pid=EVERYONE, exclude_sender=True))
+        await self._change_state(st.EntryState(self._pid, self._change_state, self._local_protos_send_packet_queue.put, self._local_client_send_packet_queue.put))
         await self._listen_websocket()
 
     async def _listen_websocket(self) -> None:
@@ -59,11 +58,13 @@ class GameProtocol:
         logging.debug(f"{self} stopped")
         await self._disconnect(self, "Client disconnected")
 
-    def _change_state(self, new_state: st.BaseState) -> None:
+    async def _change_state(self, new_state: st.BaseState) -> None:
         self._state = new_state
+        await self._state.on_transition()
 
     async def _process_packets(self) -> None:
         while not self._local_receive_packet_queue.empty():
             p: pck.BasePacket = await self._local_receive_packet_queue.get()
-            await self._state.handle_packet(p)
+            if self._state:
+                await self._state.handle_packet(p)
             logging.debug(f"Processed packet: {p}")

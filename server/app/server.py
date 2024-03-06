@@ -4,7 +4,7 @@ import traceback
 from datetime import datetime
 import websockets as ws
 from uuid import uuid4
-from server.packet import BasePacket, DisconnectPacket, PIDPacket
+from server.packet import BasePacket, DisconnectPacket
 from server.app.protocol import GameProtocol
 from server.constants import EVERYONE
 from typing import Optional

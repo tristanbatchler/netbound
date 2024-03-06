@@ -45,9 +45,6 @@ class DenyPacket(BasePacket):
     reason: Optional[str] = None
 
 class PIDPacket(BasePacket):
-    pid: bytes
-
-class ConnectPacket(BasePacket):
     ...
     
 class HelloPacket(BasePacket):
