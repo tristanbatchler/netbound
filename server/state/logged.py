@@ -1,6 +1,6 @@
 import logging
 from server.state import BaseState
-from server.packet import ChatPacket, DisconnectPacket, HelloPacket, WhoPacket
+from server.packet import ChatPacket, DisconnectPacket, HelloPacket
 from server.constants import EVERYONE
 from random import randint
 

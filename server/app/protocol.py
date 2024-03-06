@@ -9,7 +9,7 @@ from server.constants import EVERYONE
 
 class GameProtocol:
     def __init__(self, websocket: ws.WebSocketServerProtocol, pid: bytes, 
-                 disconnect_ref: Callable[[GameProtocol, str], Coroutine[Any, Any, None]]) -> None:
+                 disconnect_callback: Callable[[GameProtocol, str], Coroutine[Any, Any, None]]) -> None:
         """WARNING: This class must only be instantiated from within the server.app.ServerApp class"""
         logging.debug(f"Assigned id {pid.hex()[:8]} to new connection")
         self._websocket: ws.WebSocketServerProtocol = websocket
@@ -17,7 +17,7 @@ class GameProtocol:
         self._local_receive_packet_queue: asyncio.Queue[pck.BasePacket] = asyncio.Queue()
         self._local_protos_send_packet_queue: asyncio.Queue[pck.BasePacket] = asyncio.Queue()
         self._local_client_send_packet_queue: asyncio.Queue[pck.BasePacket] = asyncio.Queue()
-        self._disconnect: Callable = disconnect_ref
+        self._disconnect: Callable = disconnect_callback
         self._state: Optional[st.BaseState] = None
 
     def __repr__(self) -> str:
