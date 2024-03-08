@@ -48,7 +48,11 @@ class PIDPacket(BasePacket):
     ...
     
 class HelloPacket(BasePacket):
-    favourite_number: int
+    state_view: dict[str, Any]
+
+class MovePacket(BasePacket):
+    dx: int
+    dy: int
 
 class LoginPacket(BasePacket):
     username: str

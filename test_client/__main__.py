@@ -26,7 +26,7 @@ class Client:
                 p_data = packet[p_type]
 
                 if p_type == "Hello":
-                    print(f"Hello from {p_data['from_pid'].hex()[:8]} with favourite number {p_data['favourite_number']}")
+                    print(f"Hello from {p_data['from_pid'].hex()[:8]} with data {p_data['state_view']}")
 
                 if self.my_state == "Entry":
                     if p_type == "Pid":

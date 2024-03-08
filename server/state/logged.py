@@ -1,17 +1,29 @@
+from __future__ import annotations
 import logging
 from server.state import BaseState
-from server.packet import ChatPacket, DisconnectPacket, HelloPacket
+from dataclasses import dataclass
+from server.packet import ChatPacket, DisconnectPacket, HelloPacket, MovePacket
 from server.constants import EVERYONE
 from random import randint
+from typing import Any
 
 class LoggedState(BaseState):
+    @dataclass
+    class View:
+        favourite_number: int
+        x: int
+        y: int
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._favourite_number: int = randint(0, 100)
-        self._known_others: dict[bytes, int] = {}
+        self._known_others: dict[bytes, LoggedState.View] = {}
 
+        self._favourite_number: int = randint(0, 100)
+        self._x: int = 0
+        self._y: int = 0
+    
     async def on_transition(self) -> None:
-        await self._queue_local_protos_send(HelloPacket(from_pid=self._pid, to_pid=EVERYONE, exclude_sender=True, favourite_number=self._favourite_number))
+        await self._queue_local_protos_send(HelloPacket(from_pid=self._pid, to_pid=EVERYONE, exclude_sender=True, state_view=self.view_dict))
 
     async def handle_chat(self, p: ChatPacket) -> None:
         # If this came from our own client, forward it on
@@ -33,8 +45,18 @@ class LoggedState(BaseState):
 
         if p.from_pid not in self._known_others:
             # Record information about the other protocol
-            await self._queue_local_client_send(HelloPacket(from_pid=p.from_pid, favourite_number=p.favourite_number))
-            self._known_others[p.from_pid] = p.favourite_number
+            await self._queue_local_client_send(HelloPacket(from_pid=p.from_pid, state_view=p.state_view))
+            self._known_others[p.from_pid] = LoggedState.View(**p.state_view)
 
             # Tell the other protocol about us
-            await self._queue_local_protos_send(HelloPacket(from_pid=self._pid, to_pid=p.from_pid, favourite_number=self._favourite_number))
+            await self._queue_local_protos_send(HelloPacket(from_pid=self._pid, to_pid=p.from_pid, state_view=self.view_dict))
+
+    async def handle_move(self, p: MovePacket) -> None:
+        if p.from_pid == self._pid:
+            self._x += p.dx
+            self._y += p.dy
+            await self._queue_local_protos_send(MovePacket(from_pid=self._pid, to_pid=EVERYONE, exclude_sender=True, dx=p.dx, dy=p.dy))
+        elif p.from_pid in self._known_others:
+            other: LoggedState.View = self._known_others[p.from_pid]
+            other.x += p.dx
+            other.y += p.dy
