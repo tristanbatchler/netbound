@@ -2,3 +2,6 @@ websockets
 msgpack
 msgpack-types
 pydantic
+sqlalchemy[asyncio]
+aiosqlite
+mypy

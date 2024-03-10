@@ -4,13 +4,13 @@ from server.state import BaseState
 from dataclasses import dataclass
 from server.packet import ChatPacket, DisconnectPacket, HelloPacket, MovePacket
 from server.constants import EVERYONE
-from random import randint
-from typing import Any
+from typing import Optional
+from server.state import EntryState
 
 class LoggedState(BaseState):
     @dataclass
-    class View:
-        favourite_number: int
+    class View(BaseState.View):
+        name: str
         x: int
         y: int
 
@@ -18,17 +18,24 @@ class LoggedState(BaseState):
         super().__init__(*args, **kwargs)
         self._known_others: dict[bytes, LoggedState.View] = {}
 
-        self._favourite_number: int = randint(0, 100)
+        self._name: str | None = None  # This will be set in on_transition (needs to be passed from EntryState)
         self._x: int = 0
         self._y: int = 0
     
-    async def on_transition(self) -> None:
+    async def on_transition(self, previous_state_view: Optional[BaseState.View]=None) -> None:
+        assert isinstance(previous_state_view, EntryState.View)
+        if previous_state_view.username:
+            self._name = previous_state_view.username
+        else:
+            err: str = "LoggedState requires a username but EntryState did not have one"
+            logging.error(err)
+            raise ValueError(err)
         await self._queue_local_protos_send(HelloPacket(from_pid=self._pid, to_pid=EVERYONE, exclude_sender=True, state_view=self.view_dict))
 
     async def handle_chat(self, p: ChatPacket) -> None:
         # If this came from our own client, forward it on
         if p.from_pid == self._pid:
-                await self._queue_local_protos_send(ChatPacket(from_pid=self._pid, to_pid=p.to_pid, exclude_sender=p.to_pid==EVERYONE, message=p.message))
+            await self._queue_local_protos_send(ChatPacket(from_pid=self._pid, to_pid=p.to_pid, exclude_sender=p.to_pid==EVERYONE, message=p.message))
 
         # If this came from a different protocol, forward it directly to our client
         else:

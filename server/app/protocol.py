@@ -4,12 +4,19 @@ import logging
 import websockets as ws
 import server.packet as pck
 import server.state as st
+from server.state.base import BaseState
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from typing import Callable, Coroutine, Any, Optional
 from server.constants import EVERYONE
 
 class GameProtocol:
-    def __init__(self, websocket: ws.WebSocketServerProtocol, pid: bytes, 
-                 disconnect_callback: Callable[[GameProtocol, str], Coroutine[Any, Any, None]]) -> None:
+    def __init__(
+            self, 
+            websocket: ws.WebSocketServerProtocol, 
+            pid: bytes, 
+            disconnect_callback: Callable[[GameProtocol, str], Coroutine[Any, Any, None]], 
+            db_session_callback: async_sessionmaker
+        ) -> None:
         """WARNING: This class must only be instantiated from within the server.app.ServerApp class"""
         logging.debug(f"Assigned id {pid.hex()[:8]} to new connection")
         self._websocket: ws.WebSocketServerProtocol = websocket
@@ -17,7 +24,8 @@ class GameProtocol:
         self._local_receive_packet_queue: asyncio.Queue[pck.BasePacket] = asyncio.Queue()
         self._local_protos_send_packet_queue: asyncio.Queue[pck.BasePacket] = asyncio.Queue()
         self._local_client_send_packet_queue: asyncio.Queue[pck.BasePacket] = asyncio.Queue()
-        self._disconnect: Callable = disconnect_callback
+        self._disconnect: Callable[[GameProtocol, str], Coroutine[Any, Any, None]] = disconnect_callback
+        self._get_db_session: async_sessionmaker = db_session_callback
         self._state: Optional[st.BaseState] = None
 
     def __repr__(self) -> str:
@@ -27,7 +35,7 @@ class GameProtocol:
         return self.__repr__()
 
     async def _start(self) -> None:
-        await self._change_state(st.EntryState(self._pid, self._change_state, self._local_protos_send_packet_queue.put, self._local_client_send_packet_queue.put))
+        await self._change_state(st.EntryState(self._pid, self._change_state, self._local_protos_send_packet_queue.put, self._local_client_send_packet_queue.put, self._get_db_session))
         await self._listen_websocket()
 
     async def _listen_websocket(self) -> None:
@@ -58,9 +66,9 @@ class GameProtocol:
         logging.debug(f"{self} stopped")
         await self._disconnect(self, "Client disconnected")
 
-    async def _change_state(self, new_state: st.BaseState) -> None:
+    async def _change_state(self, new_state: st.BaseState, previous_state_view: Optional[BaseState.View]=None) -> None:
         self._state = new_state
-        await self._state.on_transition()
+        await self._state.on_transition(previous_state_view)
 
     async def _process_packets(self) -> None:
         while not self._local_receive_packet_queue.empty():

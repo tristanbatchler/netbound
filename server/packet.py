@@ -105,7 +105,7 @@ def deserialize(packet_: bytes) -> BasePacket:
     try:
         packet_class.model_validate(packet_data)
     except ValidationError as e:
-        raise MalformedPacketError(f"Packet data does not match expected schema: {e}")
+        raise MalformedPacketError(f"Packet data {packet_data} does not match expected schema: {e}")
 
     try:
         return packet_class(**packet_data)

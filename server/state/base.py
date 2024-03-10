@@ -1,6 +1,7 @@
 from __future__ import annotations
 from server.packet import BasePacket
 from typing import Callable, Optional, Coroutine, Any
+from sqlalchemy.ext.asyncio import async_sessionmaker
 import logging
 from dataclasses import dataclass
 
@@ -9,14 +10,19 @@ class BaseState:
     class View:
         pass
 
-    def __init__(self, pid: bytes, 
-                 change_state_callback: Callable[[BaseState], Coroutine[Any, Any, None]], 
-                 queue_local_protos_send_callback: Callable[[BasePacket], Coroutine[Any, Any, None]],
-                 queue_local_client_send_callback: Callable[[BasePacket], Coroutine[Any, Any, None]]) -> None:
+    def __init__(
+            self, 
+            pid: bytes, 
+            change_state_callback: Callable[[BaseState, BaseState.View], Coroutine[Any, Any, None]], 
+            queue_local_protos_send_callback: Callable[[BasePacket], Coroutine[Any, Any, None]],
+            queue_local_client_send_callback: Callable[[BasePacket], Coroutine[Any, Any, None]], 
+            get_db_session_callback: async_sessionmaker
+        ) -> None:
         self._pid: bytes = pid
-        self._change_states: Callable[[BaseState], Coroutine[Any, Any, None]] = change_state_callback
+        self._change_states: Callable[[BaseState, BaseState.View], Coroutine[Any, Any, None]] = change_state_callback
         self._queue_local_protos_send: Callable[[BasePacket], Coroutine[Any, Any, None]] = queue_local_protos_send_callback
         self._queue_local_client_send: Callable[[BasePacket], Coroutine[Any, Any, None]] = queue_local_client_send_callback
+        self._get_db_session: async_sessionmaker = get_db_session_callback
 
     
     @property
@@ -35,12 +41,12 @@ class BaseState:
     def view_dict(self) -> dict[str, Any]:
         return self.view.__dict__
     
-    async def on_transition(self) -> None:
+    async def on_transition(self, previous_state_view: Optional[BaseState.View]=None) -> None:
          pass
 
     async def handle_packet(self, p: BasePacket) -> None:
-        packet_name: str = p.__class__.__name__
-        handler_name: str = f"handle_{packet_name.removesuffix("Packet").lower()}"
+        packet_name: str = p.__class__.__name__.removesuffix("Packet").lower()
+        handler_name: str = f"handle_{packet_name}"
         if handler := getattr(self, handler_name, None):
             await handler(p)
         else:

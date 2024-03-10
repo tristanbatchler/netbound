@@ -1,0 +1,4 @@
+{
+    "python.languageServer": "Pylance",
+    "mypy.dmypyExecutable": "${workspaceFolder}/server/.venv/bin/dmypy"
+}
