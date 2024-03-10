@@ -8,6 +8,7 @@ from server.state.base import BaseState
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from typing import Callable, Coroutine, Any, Optional
 from server.constants import EVERYONE
+from base64 import b64encode
 
 class GameProtocol:
     def __init__(
@@ -18,7 +19,7 @@ class GameProtocol:
             db_session_callback: async_sessionmaker
         ) -> None:
         """WARNING: This class must only be instantiated from within the server.app.ServerApp class"""
-        logging.debug(f"Assigned id {pid.hex()[:8]} to new connection")
+        logging.info(f"Assigned id {b64encode(pid).decode()} to new protocol")
         self._websocket: ws.WebSocketServerProtocol = websocket
         self._pid: bytes = pid
         self._local_receive_packet_queue: asyncio.Queue[pck.BasePacket] = asyncio.Queue()
@@ -29,17 +30,21 @@ class GameProtocol:
         self._state: Optional[st.BaseState] = None
 
     def __repr__(self) -> str:
-        return f"GameProtocol({self._pid.hex()[:8]})"
+        return f"GameProtocol({b64encode(self._pid).decode()})"
     
     def __str__(self) -> str:
         return self.__repr__()
 
     async def _start(self) -> None:
         await self._change_state(st.EntryState(self._pid, self._change_state, self._local_protos_send_packet_queue.put, self._local_client_send_packet_queue.put, self._get_db_session))
-        await self._listen_websocket()
+        try:
+            await self._listen_websocket()
+        except ws.ConnectionClosedError:
+            logging.debug(f"Connection closed for id {b64encode(self._pid).decode()}")
+            await self._disconnect(self, "Client disconnected")
 
     async def _listen_websocket(self) -> None:
-        logging.debug(f"Starting protocol for id {self._pid.hex()[:8]}")
+        logging.debug(f"Starting protocol for id {b64encode(self._pid).decode()}")
 
         async for message in self._websocket:
             if not isinstance(message, bytes):

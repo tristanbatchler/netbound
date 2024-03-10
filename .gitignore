@@ -1,4 +1,34 @@
+# Don't version control the database
 server.db
+
+# GameMaker Specific
+client/scripts/Snap*/*
+client/scripts/Snap*/*
+client/scripts/Snap*/*
+client/scripts/Snap*/*
+client/scripts/Snap*/*
+client/scripts/Snap*/*
+client/scripts/Snap*/*
+client/scripts/Snap*/*
+client/scripts/Snap*/*
+client/scripts/Snap*/*
+client/scripts/Snap*/*
+client/scripts/Snap*/*
+client/scripts/Snap*/*
+client/scripts/Snap*/*
+client/scripts/Snap*/*
+client/scripts/Snap*/*
+client/scripts/Snap*/*
+client/scripts/__SnapSystem/*
+client/options/android
+client/options/html5
+client/options/ios
+client/options/linux
+client/options/mac
+client/options/operagx
+client/options/windows
+client/options/tvos
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

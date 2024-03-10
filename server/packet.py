@@ -3,6 +3,8 @@ import msgpack
 from server.constants import EVERYONE
 from pydantic import BaseModel, ValidationError
 from typing import Any, Type, Optional
+import base64
+import logging
 
 DEFINITIONS_FILE: str = "shared/packet/definitions.json"
 
@@ -16,6 +18,15 @@ class BasePacket(BaseModel):
         data = {}
         packet_name = self.__class__.__name__.removesuffix("Packet").title()
         m_dump = self.model_dump()
+
+        # # Check the b64 encoding of the PIDs
+        # logging.info(f"PROPER Python B64 for from_pid: {base64.b64encode(self.from_pid).decode()}")
+        # logging.info(f"SENDING Python B64 for from_pid: {base64.b64encode(m_dump['from_pid']).decode()}")
+        # logging.info(f"In little endian: {base64.b64encode(m_dump['from_pid']).decode('utf-8')}")
+        # packed_test = msgpack.packb(m_dump, use_bin_type=True)
+        # unpacked_test = msgpack.unpackb(packed_test, raw=True)
+        # logging.info(f"Unpacked test: {base64.b64encode(unpacked_test['from_pid']).decode()}")
+
         data[packet_name] = m_dump
         return msgpack.packb(data, use_bin_type=True)
     
@@ -23,16 +34,21 @@ class BasePacket(BaseModel):
         TO_PID: str = "to_pid"
         FROM_PID: str = "from_pid"
         d: dict[str, Any] = self.__dict__.copy()
-        d[FROM_PID] = self.from_pid.hex()[:8]
+        d[FROM_PID] = base64.b64encode(self.from_pid).decode()
 
         if self.to_pid == EVERYONE:
             d[TO_PID] = "EVERYONE"
         elif self.to_pid is None:
             d[TO_PID] = d[FROM_PID]
         elif isinstance(self.to_pid, list):
-            d[TO_PID] = [x.hex()[:8] if x else f"{self.from_pid.hex()[:8]}'s client" for x in self.to_pid]
+            d[TO_PID] = [
+                base64.b64encode(x).decode()
+                if x else 
+                f"{base64.b64encode(self.from_pid).decode()}'s client"
+                for x in self.to_pid
+            ]
         else:
-            d[TO_PID] = self.to_pid.hex()[:8]
+            d[TO_PID] = base64.b64encode(self.to_pid).decode()
         return f"{self.__class__.__name__}{d}"
     
     def __str__(self) -> str:
@@ -94,6 +110,12 @@ def deserialize(packet_: bytes) -> BasePacket:
         raise MalformedPacketError(f"Invalid packet name (not a string): {packet_name}")
 
     packet_data: dict = packet_dict[packet_name]
+    
+    # PIDs are sent as b64-encoded strings, but we need them as bytes
+    for _pid_key in ["to_pid", "from_pid"]:
+        if _pid_key in packet_data:
+            packet_data[_pid_key] = base64.b64decode(packet_data[_pid_key])
+
 
     class_name: str = packet_name.title() + "Packet"
 

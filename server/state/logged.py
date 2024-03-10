@@ -33,8 +33,10 @@ class LoggedState(BaseState):
         await self._queue_local_protos_send(HelloPacket(from_pid=self._pid, to_pid=EVERYONE, exclude_sender=True, state_view=self.view_dict))
 
     async def handle_chat(self, p: ChatPacket) -> None:
+        logging.info(f"Received {p}")
         # If this came from our own client, forward it on
         if p.from_pid == self._pid:
+            logging.info("GOT THE MESSAGE FROM OUR OWN CLIENT")
             await self._queue_local_protos_send(ChatPacket(from_pid=self._pid, to_pid=p.to_pid, exclude_sender=p.to_pid==EVERYONE, message=p.message))
 
         # If this came from a different protocol, forward it directly to our client

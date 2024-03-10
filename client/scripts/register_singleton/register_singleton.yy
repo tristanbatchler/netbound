@@ -1,0 +1,13 @@
+{
+  "$GMScript":"",
+  "%Name":"register_singleton",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"register_singleton",
+  "parent":{
+    "name":"Scripts",
+    "path":"folders/Scripts.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

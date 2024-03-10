@@ -4,6 +4,7 @@ from server.packet import LoginPacket, RegisterPacket, OkPacket, PIDPacket, Deny
 from server.model import User
 from sqlalchemy import select
 from dataclasses import dataclass
+from server.constants import EVERYONE
 
 class EntryState(BaseState):
     @dataclass
