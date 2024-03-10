@@ -19,14 +19,6 @@ class BasePacket(BaseModel):
         packet_name = self.__class__.__name__.removesuffix("Packet").title()
         m_dump = self.model_dump()
 
-        # # Check the b64 encoding of the PIDs
-        # logging.info(f"PROPER Python B64 for from_pid: {base64.b64encode(self.from_pid).decode()}")
-        # logging.info(f"SENDING Python B64 for from_pid: {base64.b64encode(m_dump['from_pid']).decode()}")
-        # logging.info(f"In little endian: {base64.b64encode(m_dump['from_pid']).decode('utf-8')}")
-        # packed_test = msgpack.packb(m_dump, use_bin_type=True)
-        # unpacked_test = msgpack.unpackb(packed_test, raw=True)
-        # logging.info(f"Unpacked test: {base64.b64encode(unpacked_test['from_pid']).decode()}")
-
         data[packet_name] = m_dump
         return msgpack.packb(data, use_bin_type=True)
     
