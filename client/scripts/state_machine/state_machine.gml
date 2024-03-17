@@ -2,7 +2,6 @@ function state_entry(_packet_name, _packet_data) {
 	switch (_packet_name) {
 		case "Pid":
 			obj_network_client.pid = pid_to_string(_packet_data.from_pid);
-			obj_chatbox.add_to_log("Received PID from server: " + obj_network_client.pid);
 			break;
 		}	
 }
@@ -54,9 +53,11 @@ function state_play(_packet_name, _packet_data) {
 				
 				obj_chatbox.add_to_log("Welcome back, " + obj_player.name);
 			} else {
-				var _other = instance_create_layer(0, 0, "Instances", obj_actor, _state_view);
-				struct_set(obj_network_client.known_others, _from_pid, _other);
-				obj_chatbox.add_to_log(_other.name + " has joined");
+				if (!struct_exists(obj_network_client.known_others, _from_pid)) {
+					var _other = instance_create_layer(0, 0, "Instances", obj_actor, _state_view);
+					struct_set(obj_network_client.known_others, _from_pid, _other);
+					obj_chatbox.add_to_log(_other.name + " has joined");
+				}
 			}
 			break;
 			
@@ -72,5 +73,16 @@ function state_play(_packet_name, _packet_data) {
 				_other.x += _dx;
 				_other.y += _dy;
 			}
+			break;
+			
+		case "Disconnect":
+			var _reason = _packet_data.reason;
+			if (struct_exists(obj_network_client.known_others, _from_pid)) {
+				var _other = struct_get(obj_network_client.known_others, _from_pid);
+				obj_chatbox.add_to_log(_other.name + " has disconnected due to " + string(_reason), c_yellow);
+				instance_destroy(_other);
+				struct_remove(obj_network_client.known_others, _from_pid);
+			}
+			break;
 	}
 }
