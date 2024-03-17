@@ -36,6 +36,7 @@
     {"name":"obj_chatbox","order":1,"path":"objects/obj_chatbox/obj_chatbox.yy",},
     {"name":"obj_player","order":2,"path":"objects/obj_player/obj_player.yy",},
     {"name":"obj_statemachine","order":4,"path":"objects/obj_statemachine/obj_statemachine.yy",},
+    {"name":"obj_room_manager","order":5,"path":"objects/obj_room_manager/obj_room_manager.yy",},
     {"name":"chatbox_helpers","order":4,"path":"scripts/chatbox_helpers/chatbox_helpers.yy",},
     {"name":"pid_to_string","order":5,"path":"scripts/pid_to_string/pid_to_string.yy",},
     {"name":"SnapBufferRead2DArray","order":1,"path":"scripts/SnapBufferRead2DArray/SnapBufferRead2DArray.yy",},

@@ -1,6 +1,21 @@
-var _input_x = keyboard_check(vk_right) - keyboard_check(vk_left);
-var _input_y = keyboard_check(vk_down) - keyboard_check(vk_up);
-var _speed = 5;
+var _dx = 0;
+var _dy = 0;
 
-x += _input_x * _speed;
-y += _input_y * _speed;
+if (keyboard_check_released(vk_right)) {
+	_dx = obj_room_manager.xgrid_size;
+} else if (keyboard_check_released(vk_left)) {
+	_dx = -obj_room_manager.xgrid_size;	
+} else if (keyboard_check_released(vk_down)) {
+	_dy = obj_room_manager.xgrid_size;	
+} else if (keyboard_check_released(vk_up)) {
+	_dy = -obj_room_manager.xgrid_size;	
+}
+
+if (_dx != 0 || _dy != 0) {
+	obj_network_client.send_packet({
+		move: {
+			dx: _dx,
+			dy: _dy
+		}
+	});	
+}

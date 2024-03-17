@@ -33,29 +33,41 @@ function state_register(_packet_name, _packet_data) {
 }
 
 function state_play(_packet_name, _packet_data) {
+	var _from_pid = pid_to_string(_packet_data.from_pid);
 	switch (_packet_name) {
 		case "Chat":
-			var _sender = struct_get(known_others, _packet_data.from_pid)
+			var _sender = struct_get(obj_network_client.known_others, _from_pid)
 			var _message = _packet_data.message;
 			obj_chatbox.add_to_log(_sender.name + ": " + _message);
 			break;
 				
 		case "Hello":
-			var _from_pid = pid_to_string(_packet_data.from_pid);
+			
 			var _state_view = _packet_data.state_view;
 			
-			if (_from_pid == obj_network_client.pid) { // This is information about our own player
-				instance_create_layer(0, 0, "Instances", obj_player);
-				obj_player.x = _state_view.x;
-				obj_player.y = _state_view.y;
-				obj_player.name = _state_view.name;
+			if (_from_pid == obj_network_client.pid) {
+				instance_create_layer(0, 0, "Instances", obj_player, _state_view);
 				
 				obj_chatbox.add_to_log("Welcome back, " + obj_player.name);
 			} else {
-				struct_set(obj_network_client.known_others, _from_pid, _state_view);
 				var _other = instance_create_layer(0, 0, "Instances", obj_actor, _state_view);
+				struct_set(obj_network_client.known_others, _from_pid, _other);
 				obj_chatbox.add_to_log(_other.name + " has joined");
 			}
 			break;
+			
+		case "Move":
+			var _dx = _packet_data.dx;
+			var _dy = _packet_data.dy;
+			obj_chatbox.add_to_log("Received a move packet: dx=" + string(_dx) + ", dy=" + string(_dy));
+			
+			if (_from_pid == obj_network_client.pid) {
+				obj_player.x += _dx;
+				obj_player.y += _dy;
+			} else if (struct_exists(obj_network_client.known_others, _from_pid)) {
+				var _other = struct_get(obj_network_client.known_others, _from_pid);
+				_other.x += _dx;
+				_other.y += _dy;
+			}
 	}
 }

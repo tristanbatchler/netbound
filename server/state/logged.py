@@ -46,6 +46,7 @@ class LoggedState(BaseState):
     async def handle_disconnect(self, p: DisconnectPacket) -> None:
         # Forward the disconnect packet to the client
         await self._queue_local_client_send(DisconnectPacket(from_pid=p.from_pid, reason=p.reason))
+        self._known_others.pop(p.from_pid, None)
 
     async def handle_hello(self, p: HelloPacket) -> None:
         # Forward the information straight to the client
@@ -59,6 +60,8 @@ class LoggedState(BaseState):
             await self._queue_local_protos_send(HelloPacket(from_pid=self._pid, to_pid=p.from_pid, state_view=self.view_dict))
 
     async def handle_move(self, p: MovePacket) -> None:
+        logging.info(f"RECEIVED A MOVE PACKET: {p}")
+        await self._queue_local_client_send(MovePacket(from_pid=p.from_pid, dx=p.dx, dy=p.dy))
         if p.from_pid == self._pid:
             self._x += p.dx
             self._y += p.dy
@@ -67,3 +70,4 @@ class LoggedState(BaseState):
             other: LoggedState.View = self._known_others[p.from_pid]
             other.x += p.dx
             other.y += p.dy
+            

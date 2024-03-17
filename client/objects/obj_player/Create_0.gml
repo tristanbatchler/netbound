@@ -1,2 +1,1 @@
 register_singleton();
-name = "";
