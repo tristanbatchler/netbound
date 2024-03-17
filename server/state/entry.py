@@ -43,7 +43,12 @@ class EntryState(BaseState):
                 session.add(entity)
                 await session.commit()
 
-                instanced_entity: InstancedEntity = InstancedEntity(entity_id=entity.id, x=randint(16, 304), y=randint(16, 224))
+                room_width: int = 320
+                room_height: int = 240
+                grid_size: int = 16
+                random_x: int = grid_size * randint(1, room_width // grid_size - 1)
+                random_y: int = grid_size * randint(1, room_height // grid_size - 1)
+                instanced_entity: InstancedEntity = InstancedEntity(entity_id=entity.id, x=random_x, y=random_y)
                 
                 session.add(instanced_entity)
                 await session.commit()
@@ -52,5 +57,5 @@ class EntryState(BaseState):
 
                 session.add(player)
                 await session.commit()
-                
+
                 await self._queue_local_client_send(OkPacket(from_pid=self._pid))

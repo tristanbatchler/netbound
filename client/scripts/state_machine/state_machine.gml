@@ -37,10 +37,10 @@ function state_play(_packet_name, _packet_data) {
 		case "Chat":
 			var _message = _packet_data.message;
 			if (_from_pid == obj_network_client.pid) {
-				obj_chatbox.add_to_log(obj_player.name + ": " + _message);
+				obj_chatbox.add_to_log(obj_player.name + ": " + _message, c_lime);
 			} else {
 				var _sender = struct_get(obj_network_client.known_others, _from_pid)
-				obj_chatbox.add_to_log(_sender.name + ": " + _message);
+				obj_chatbox.add_to_log(_sender.name + ": " + _message, c_aqua);
 			}
 			break;
 				

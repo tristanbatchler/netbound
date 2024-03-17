@@ -1,3 +1,4 @@
+draw_set_halign(fa_left);
 var _num_messages = ds_list_size(log);
 var _num_to_show = min(_num_messages, max_to_show);
 var _padding = ceil(string_height("@") * 1.5);
