@@ -10,7 +10,7 @@ from server.constants import EVERYONE
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
-from server.model import Base
+from server.database.model import Base
 
 class ServerApp:
     def __init__(self, host: str, port: int, ticks_per_second: int) -> None:
@@ -20,7 +20,7 @@ class ServerApp:
         self._connected_protocols: dict[bytes, GameProtocol] = {}
         self._global_protos_packet_queue: asyncio.Queue[BasePacket] = asyncio.Queue()
     
-        self._async_engine: AsyncEngine = create_async_engine("sqlite+aiosqlite:///./server.db", echo=True)
+        self._async_engine: AsyncEngine = create_async_engine("sqlite+aiosqlite:///server/database/nebound.db", echo=True)
         self._async_session: async_sessionmaker = async_sessionmaker(bind=self._async_engine, class_=AsyncSession, expire_on_commit=False)
 
     async def start(self) -> None:

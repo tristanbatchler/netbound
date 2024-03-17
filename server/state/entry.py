@@ -1,10 +1,11 @@
 import logging
 from server.state import BaseState
 from server.packet import LoginPacket, RegisterPacket, OkPacket, PIDPacket, DenyPacket
-from server.model import User
+from server.database.model import User, Entity, InstancedEntity, Player
 from sqlalchemy import select
 from dataclasses import dataclass
 from server.constants import EVERYONE
+from random import randint
 
 class EntryState(BaseState):
     @dataclass
@@ -36,6 +37,20 @@ class EntryState(BaseState):
             else:
                 user: User = User(username=p.username, password=p.password)
                 logging.info(f"Registering new user {user}")
+                entity: Entity = Entity(name=p.username)
+                
                 session.add(user)
+                session.add(entity)
                 await session.commit()
+
+                instanced_entity: InstancedEntity = InstancedEntity(entity_id=entity.id, x=randint(16, 304), y=randint(16, 224))
+                
+                session.add(instanced_entity)
+                await session.commit()
+
+                player: Player = Player(entity_id=entity.id, instanced_entity_id=instanced_entity.entity_id, user_id=user.id)
+
+                session.add(player)
+                await session.commit()
+                
                 await self._queue_local_client_send(OkPacket(from_pid=self._pid))

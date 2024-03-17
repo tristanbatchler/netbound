@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import traceback
 from server import app
 
 async def main() -> None:
@@ -23,3 +24,4 @@ if __name__ == "__main__":
         logging.info("Server stopped by user")
     except Exception as e:
         logging.error(f"Unexpected error: {e}")
+        traceback.print_exc() 

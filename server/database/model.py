@@ -16,8 +16,16 @@ class Entity(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
 
+class Player(Base):
+    __tablename__ = 'players'
+    id = Column(Integer, primary_key=True)
+    entity_id = Column(Integer, ForeignKey('entities.id'), unique=True)
+    instanced_entity_id = Column(Integer, ForeignKey('instanced_entities.entity_id'), unique=True)
+    user_id = Column(Integer, ForeignKey('users.id'), unique=True)
+
 class InstancedEntity(Base):
     __tablename__ = 'instanced_entities'
-    entity_id = Column(Integer, ForeignKey('entities.id'), primary_key=True)
+    id = Column(Integer, primary_key=True)
+    entity_id = Column(Integer, ForeignKey('entities.id'))
     x = Column(Integer)
     y = Column(Integer)

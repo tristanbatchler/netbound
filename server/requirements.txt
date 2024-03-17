@@ -5,3 +5,4 @@ pydantic
 sqlalchemy[asyncio]
 aiosqlite
 mypy
+alembic
