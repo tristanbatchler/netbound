@@ -9,15 +9,17 @@ function chatbox_process_command(_input_string) {
 	var _command = get_command(_input_string);
     switch (_command) {
         case "/login":
+			obj_statemachine.state = state_login;
             handle_login(_input_string);
             break;
         case "/register":
+			obj_statemachine.state = state_register;
             handle_register(_input_string);
             break;
         default:
             obj_network_client.send_packet({
 				chat: {
-					to_pid: obj_network_client.EVERYONE, 
+					to_pid: obj_network_client.everyone, 
 					message: _input_string	
 				}
 			});

@@ -30,7 +30,7 @@ class LoggedState(BaseState):
             err: str = "LoggedState requires a username but EntryState did not have one"
             logging.error(err)
             raise ValueError(err)
-        await self._queue_local_protos_send(HelloPacket(from_pid=self._pid, to_pid=EVERYONE, exclude_sender=True, state_view=self.view_dict))
+        await self._queue_local_protos_send(HelloPacket(from_pid=self._pid, to_pid=EVERYONE, state_view=self.view_dict))
 
     async def handle_chat(self, p: ChatPacket) -> None:
         logging.info(f"Received {p}")
@@ -48,13 +48,11 @@ class LoggedState(BaseState):
         await self._queue_local_client_send(DisconnectPacket(from_pid=p.from_pid, reason=p.reason))
 
     async def handle_hello(self, p: HelloPacket) -> None:
-        if p.from_pid == self._pid:
-            logging.warning(f"Received a HelloPacket from our own client")
-            return
+        # Forward the information straight to the client
+        await self._queue_local_client_send(HelloPacket(from_pid=p.from_pid, state_view=p.state_view))
 
-        if p.from_pid not in self._known_others:
+        if p.from_pid != self._pid and p.from_pid not in self._known_others:
             # Record information about the other protocol
-            await self._queue_local_client_send(HelloPacket(from_pid=p.from_pid, state_view=p.state_view))
             self._known_others[p.from_pid] = LoggedState.View(**p.state_view)
 
             # Tell the other protocol about us
