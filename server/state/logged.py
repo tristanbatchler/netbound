@@ -37,7 +37,8 @@ class LoggedState(BaseState):
         # If this came from our own client, forward it on
         if p.from_pid == self._pid:
             logging.info("GOT THE MESSAGE FROM OUR OWN CLIENT")
-            await self._queue_local_protos_send(ChatPacket(from_pid=self._pid, to_pid=p.to_pid, exclude_sender=p.to_pid==EVERYONE, message=p.message))
+            await self._queue_local_protos_send(ChatPacket(from_pid=self._pid, to_pid=p.to_pid, exclude_sender=True, message=p.message))
+            await self._queue_local_client_send(ChatPacket(from_pid=self._pid, message=p.message))
 
         # If this came from a different protocol, forward it directly to our client
         else:
