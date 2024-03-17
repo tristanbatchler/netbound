@@ -53,7 +53,7 @@ class EntryState(BaseState):
                 session.add(instanced_entity)
                 await session.commit()
 
-                player: Player = Player(entity_id=entity.id, instanced_entity_id=instanced_entity.entity_id, user_id=user.id)
+                player: Player = Player(entity_id=entity.id, instanced_entity_id=instanced_entity.entity_id, user_id=user.id, image_index=randint(0, 17))
 
                 session.add(player)
                 await session.commit()

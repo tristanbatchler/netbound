@@ -22,6 +22,7 @@ class Player(Base):
     entity_id = Column(Integer, ForeignKey('entities.id'), unique=True)
     instanced_entity_id = Column(Integer, ForeignKey('instanced_entities.entity_id'), unique=True)
     user_id = Column(Integer, ForeignKey('users.id'), unique=True)
+    image_index = Column(Integer, default=0)
 
 class InstancedEntity(Base):
     __tablename__ = 'instanced_entities'

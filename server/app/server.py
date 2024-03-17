@@ -20,14 +20,10 @@ class ServerApp:
         self._connected_protocols: dict[bytes, GameProtocol] = {}
         self._global_protos_packet_queue: asyncio.Queue[BasePacket] = asyncio.Queue()
     
-        self._async_engine: AsyncEngine = create_async_engine("sqlite+aiosqlite:///server/database/nebound.db", echo=True)
+        self._async_engine: AsyncEngine = create_async_engine("sqlite+aiosqlite:///server/database/netbound.db", echo=True)
         self._async_session: async_sessionmaker = async_sessionmaker(bind=self._async_engine, class_=AsyncSession, expire_on_commit=False)
 
     async def start(self) -> None:
-        logging.info("Syncing database")
-        async with self._async_engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-
         logging.info(f"Starting server on {self._host}:{self._port}")
         async with ws.serve(self.handle_connection, self._host, self._port):
             await asyncio.Future()

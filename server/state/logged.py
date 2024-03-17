@@ -15,6 +15,7 @@ class LoggedState(BaseState):
         name: str
         x: int
         y: int
+        image_index: int
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -26,6 +27,7 @@ class LoggedState(BaseState):
         self._name: str | None = None  # This will be set in on_transition (needs to be passed from EntryState)
         self._x: int = 0
         self._y: int = 0
+        self._image_index: int = 0
     
     async def on_transition(self, previous_state_view: Optional[BaseState.View]=None) -> None:
         assert isinstance(previous_state_view, EntryState.View)
@@ -45,6 +47,7 @@ class LoggedState(BaseState):
             self._name = self._entity.name
             self._x = self._instanced_entity.x
             self._y = self._instanced_entity.y
+            self._image_index = self._player.image_index
     
 
         await self._queue_local_protos_send(HelloPacket(from_pid=self._pid, to_pid=EVERYONE, state_view=self.view_dict))

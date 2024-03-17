@@ -1,6 +1,6 @@
 # Don't version control the database
 server/database/nebound.db
-server/database/migrations
+server/database/migrations/versions/*.py
 
 # GameMaker Specific
 client/scripts/Snap*/*

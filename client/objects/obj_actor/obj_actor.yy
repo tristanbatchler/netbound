@@ -3,6 +3,7 @@
   "%Name":"obj_actor",
   "eventList":[
     {"$GMEvent":"","%Name":"","collisionObjectId":null,"eventNum":64,"eventType":8,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
+    {"$GMEvent":"","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":0,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
   ],
   "managed":true,
   "name":"obj_actor",
@@ -30,8 +31,8 @@
   "resourceVersion":"2.0",
   "solid":false,
   "spriteId":{
-    "name":"spr_other",
-    "path":"sprites/spr_other/spr_other.yy",
+    "name":"spr_actors",
+    "path":"sprites/spr_actors/spr_actors.yy",
   },
   "spriteMaskId":null,
   "visible":true,
