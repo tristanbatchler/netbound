@@ -63,7 +63,6 @@ function state_play(_packet_name, _packet_data) {
 		case "Move":
 			var _dx = _packet_data.dx;
 			var _dy = _packet_data.dy;
-			obj_chatbox.add_to_log("Received a move packet: dx=" + string(_dx) + ", dy=" + string(_dy));
 			
 			if (_from_pid == obj_network_client.pid) {
 				obj_player.x += _dx;
