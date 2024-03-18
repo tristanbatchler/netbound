@@ -1,4 +1,0 @@
-websockets
-msgpack
-msgpack-types
-mypy

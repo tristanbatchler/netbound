@@ -90,7 +90,7 @@
     {"name":"SnapToYAML","order":3,"path":"scripts/SnapToYAML/SnapToYAML.yy",},
     {"name":"SnapVisualize","order":15,"path":"scripts/SnapVisualize/SnapVisualize.yy",},
     {"name":"state_machine","order":6,"path":"scripts/state_machine/state_machine.yy",},
-    {"name":"spr_other","order":1,"path":"sprites/spr_other/spr_other.yy",},
     {"name":"spr_actors","order":2,"path":"sprites/spr_actors/spr_actors.yy",},
+    {"name":"spr_other","order":1,"path":"sprites/spr_other/spr_other.yy",},
   ],
 }

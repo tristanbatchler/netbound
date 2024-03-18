@@ -1,2 +1,2 @@
+event_inherited();
 register_singleton();
-image_speed = 0;
