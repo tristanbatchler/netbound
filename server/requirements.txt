@@ -6,3 +6,4 @@ sqlalchemy[asyncio]
 aiosqlite
 mypy
 alembic
+bcrypt
