@@ -6,7 +6,7 @@ from server import app
 async def main() -> None:
     logging.info("Starting server")
 
-    server_app: app.ServerApp = app.ServerApp("localhost", 8081, 10)
+    server_app: app.ServerApp = app.ServerApp("localhost", 443, 10)
     async with asyncio.TaskGroup() as tg:
         tg.create_task(server_app.start())
         tg.create_task(server_app.run())

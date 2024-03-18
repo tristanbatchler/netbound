@@ -41,6 +41,9 @@ class BaseState:
     def view_dict(self) -> dict[str, Any]:
         return self.view.__dict__
     
+    async def change_states(self, new_state: type[BaseState]) -> None:
+        await self._change_states(new_state(self._pid, self._change_states, self._queue_local_protos_send, self._queue_local_client_send, self._get_db_session), self.view)
+
     async def on_transition(self, previous_state_view: Optional[BaseState.View]=None) -> None:
          pass
 

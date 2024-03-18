@@ -276,6 +276,115 @@
         ],
         "type": "object"
     },
+    "WhichUsernamesPacket": {
+        "properties": {
+            "from_pid": {
+                "format": "binary",
+                "title": "From Pid",
+                "type": "string"
+            },
+            "to_pid": {
+                "anyOf": [
+                    {
+                        "format": "binary",
+                        "type": "string"
+                    },
+                    {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "format": "binary",
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
+                        },
+                        "type": "array"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ],
+                "default": null,
+                "title": "To Pid"
+            },
+            "exclude_sender": {
+                "anyOf": [
+                    {
+                        "type": "boolean"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ],
+                "default": false,
+                "title": "Exclude Sender"
+            }
+        },
+        "required": [
+            "from_pid"
+        ],
+        "type": "object"
+    },
+    "MyUsernamePacket": {
+        "properties": {
+            "from_pid": {
+                "format": "binary",
+                "title": "From Pid",
+                "type": "string"
+            },
+            "to_pid": {
+                "anyOf": [
+                    {
+                        "format": "binary",
+                        "type": "string"
+                    },
+                    {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "format": "binary",
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
+                        },
+                        "type": "array"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ],
+                "default": null,
+                "title": "To Pid"
+            },
+            "exclude_sender": {
+                "anyOf": [
+                    {
+                        "type": "boolean"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ],
+                "default": false,
+                "title": "Exclude Sender"
+            },
+            "username": {
+                "title": "Username",
+                "type": "string"
+            }
+        },
+        "required": [
+            "from_pid",
+            "username"
+        ],
+        "type": "object"
+    },
     "MovePacket": {
         "properties": {
             "from_pid": {

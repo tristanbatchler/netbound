@@ -7,3 +7,4 @@ aiosqlite
 mypy
 alembic
 bcrypt
+cryptography

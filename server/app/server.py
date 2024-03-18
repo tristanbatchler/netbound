@@ -3,6 +3,7 @@ import asyncio
 import traceback
 from datetime import datetime
 import websockets as ws
+import ssl
 from uuid import uuid4
 from server.packet import BasePacket, DisconnectPacket
 from server.app.protocol import GameProtocol
@@ -11,6 +12,7 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
 from server.database.model import Base
+from cryptography import x509
 
 class ServerApp:
     def __init__(self, host: str, port: int, ticks_per_second: int) -> None:
@@ -24,8 +26,9 @@ class ServerApp:
         self._async_session: async_sessionmaker = async_sessionmaker(bind=self._async_engine, class_=AsyncSession, expire_on_commit=False)
 
     async def start(self) -> None:
+        ssl_context: ssl.SSLContext = self._get_ssl_context("server/app/ssl/cert.pem", "server/app/ssl/key.pem")
         logging.info(f"Starting server on {self._host}:{self._port}")
-        async with ws.serve(self.handle_connection, self._host, self._port):
+        async with ws.serve(self.handle_connection, self._host, self._port, ssl=ssl_context):
             await asyncio.Future()
 
     async def run(self) -> None:
@@ -43,6 +46,17 @@ class ServerApp:
                 await asyncio.sleep(diff)
             elif diff < 0:
                 logging.warning("Tick time budget exceeded by %s seconds", -diff)
+
+    def _get_ssl_context(self, certpath: str, keypath: str) -> ssl.SSLContext:
+        logging.info("Loading encryption key")
+        ssl_context: ssl.SSLContext = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        try:
+            ssl_context.load_cert_chain(certpath, keypath)
+        except FileNotFoundError:
+            raise FileNotFoundError(f"No encryption key or certificate found. Please generate a pair and save them to {certpath} and {keypath}")
+
+        return ssl_context
+
 
 
     async def handle_connection(self, websocket: ws.WebSocketServerProtocol) -> None:

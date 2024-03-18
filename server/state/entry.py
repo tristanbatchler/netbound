@@ -1,6 +1,6 @@
 import logging
 from server.state import BaseState
-from server.packet import LoginPacket, RegisterPacket, OkPacket, PIDPacket, DenyPacket
+from server.packet import LoginPacket, RegisterPacket, OkPacket, PIDPacket, DenyPacket, WhichUsernamesPacket, MyUsernamePacket
 from server.database.model import User, Entity, InstancedEntity, Player
 from sqlalchemy import select
 from dataclasses import dataclass
@@ -17,15 +17,29 @@ class EntryState(BaseState):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._username: str | None = None
-        self._last_failed_login_attempt: float = 0
+        self._last_failed_login_attempt: float = 0  # To rate limit login attempts
+        self._usernames_already_logged_in: set[str] = set()  # To avoid double logins
 
     async def on_transition(self, *args, **kwargs) -> None:
         await self._queue_local_client_send(PIDPacket(from_pid=self._pid))
 
+        # Send out a request for all currently logged in usernames (to avoid double logins)
+        await self._queue_local_protos_send(WhichUsernamesPacket(from_pid=self._pid, to_pid=EVERYONE))
+
+    # Listen for other protocol's response to our `WhichUsernamesPacket`
+    async def handle_myusername(self, p: MyUsernamePacket) -> None:
+        self._usernames_already_logged_in.add(p.username)
+
     async def handle_login(self, p: LoginPacket) -> None:
+        # Rate limit login attempts
         if time() - self._last_failed_login_attempt < 5:
             await self._queue_local_client_send(DenyPacket(from_pid=self._pid, reason="Too many failed login attempts. Please wait a few seconds before trying again."))
             logging.warning(f"Too many failed login attempts from {self._pid}")
+            return
+        
+        # Check if user is already logged in
+        if p.username in self._usernames_already_logged_in:
+            await self._queue_local_client_send(DenyPacket(from_pid=self._pid, reason="This user is already logged in"))
             return
 
         async with self._get_db_session() as session:
@@ -34,7 +48,7 @@ class EntryState(BaseState):
                 from server.state import LoggedState
                 self._username = p.username
                 await self._queue_local_client_send(OkPacket(from_pid=self._pid))
-                await self._change_states(LoggedState(self._pid, self._change_states, self._queue_local_protos_send, self._queue_local_client_send, self._get_db_session), self.view)
+                await self.change_states(LoggedState)
             else:
                 await self._queue_local_client_send(DenyPacket(from_pid=self._pid, reason="Invalid username or password"))
                 self._last_failed_login_attempt = time()
