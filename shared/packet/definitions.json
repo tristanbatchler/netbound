@@ -168,6 +168,7 @@
         "type": "object"
     },
     "PIDPacket": {
+        "description": "Sent to the client to inform it of its PID (ascertained by `from_pid` property)",
         "properties": {
             "from_pid": {
                 "format": "binary",
@@ -220,6 +221,7 @@
         "type": "object"
     },
     "HelloPacket": {
+        "description": "Sent between protocols and to the client to convey essential information about the state of the sender, e.g. position, name, etc.",
         "properties": {
             "from_pid": {
                 "format": "binary",
@@ -277,6 +279,7 @@
         "type": "object"
     },
     "WhichUsernamesPacket": {
+        "description": "Sent from a new connection to other protocols to ask for the usernames of all currently logged in users (to avoid double logins)",
         "properties": {
             "from_pid": {
                 "format": "binary",
@@ -329,6 +332,7 @@
         "type": "object"
     },
     "MyUsernamePacket": {
+        "description": "Sent to a protocol who has requested the username of the sender (via `WhichUsernamesPacket`)",
         "properties": {
             "from_pid": {
                 "format": "binary",
