@@ -5,17 +5,25 @@ function get_command(_input_string) {
     return _input_string;
 }
 
+function get_args(_input_string) {
+	var _command = get_command(_input_string);
+	var _headless_input_string = string_replace(_input_string, _command, "");
+	return string_split(_headless_input_string, " ", true);
+}
+
 function chatbox_process_command(_input_string) {
 	var _command = get_command(_input_string);
+	var _args = get_args(_input_string);
     switch (_command) {
         case "/login":
-			obj_statemachine.state = state_login;
-            handle_login(_input_string);
+            handle_login(_args);
             break;
         case "/register":
-			obj_statemachine.state = state_register;
-            handle_register(_input_string);
+            handle_register(_args);
             break;
+		case "/logout":
+			handle_logout(_args);
+			break;
         default:
             obj_network_client.send_packet({
 				chat: {
@@ -27,30 +35,45 @@ function chatbox_process_command(_input_string) {
     }
 }
 
-function handle_login(_input_string) {
-	var _array = string_split(_input_string, " ");
-    if (array_length(_array) != 3) {
+function handle_login(_args) {
+	obj_statemachine.state = state_login;;
+    if (array_length(_args) != 2) {
         add_to_log("Usage: /login username password", c_yellow);
     } else {
         obj_network_client.send_packet({
 			login: {
-				username: _array[1],
-				password: _array[2]
+				username: _args[0],
+				password: _args[1]
 			}
 		});
     }
 }
 
-function handle_register(_input_string) {
-	var _array = string_split(_input_string, " ");
-    if (array_length(_array) != 3) {
+function handle_register(_args) {
+	obj_statemachine.state = state_register;
+    if (array_length(_args) != 2) {
         add_to_log("Usage: /register username password", c_yellow);
     } else {
         obj_network_client.send_packet({
 			register: {
-				username: _array[1],
-				password: _array[2]
+				username: _args[0],
+				password: _args[1]
 			}
 		});
     }
+}
+
+function handle_logout(_args) {
+	obj_statemachine.state = state_entry;
+	if (array_length(_args) != 0) {
+		add_to_log("Usage: /logout", c_yellow);	
+	} else {
+		obj_network_client.send_packet({
+			disconnect: {
+				to_pid: obj_network_client.everyone,
+				reason: "user logged out"
+			}
+		});
+		game_restart();
+	}
 }
