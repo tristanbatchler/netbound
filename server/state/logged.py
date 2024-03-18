@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from server.packet import ChatPacket, DisconnectPacket, HelloPacket, MovePacket, MyUsernamePacket, WhichUsernamesPacket
 from server.constants import EVERYONE
 from typing import Optional
-from server.state import EntryState
+from server.state import EntryState, TransitionError
 from server.database.model import User, Entity, InstancedEntity, Player
 from sqlalchemy import select
 
@@ -37,15 +37,21 @@ class LoggedState(BaseState):
             # Broadcast our username to everyone, just in case a new connection is listening for it to build its list of logged in users (hence avoiding double logins)
             await self._queue_local_protos_send(MyUsernamePacket(from_pid=self._pid, to_pid=EVERYONE, username=self._name))
         else:
-            err: str = "LoggedState requires a username but EntryState did not have one"
-            logging.error(err)
-            raise ValueError(err)
+            raise TransitionError("LoggedState requires a username but EntryState did not have one")
         
         async with self._get_db_session() as session:
             user: User = (await session.execute(select(User).where(User.username == self._name))).scalar_one_or_none()
             self._player = (await session.execute(select(Player).where(Player.user_id == user.id))).scalar_one_or_none()
+            if not self._player:
+                raise TransitionError(f"No player associated with user {self._name}")
+
             self._entity = (await session.execute(select(Entity).where(Entity.id == self._player.entity_id))).scalar_one_or_none()
+            if not self._entity:
+                raise TransitionError("No entity associated with player")
+
             self._instanced_entity = (await session.execute(select(InstancedEntity).where(InstancedEntity.entity_id == self._player.instanced_entity_id))).scalar_one_or_none()
+            if not self._instanced_entity:
+                raise TransitionError("No instanced entity associated with player")
 
             self._name = self._entity.name
             self._x = self._instanced_entity.x
@@ -95,6 +101,7 @@ class LoggedState(BaseState):
             await self._queue_local_protos_send(MovePacket(from_pid=self._pid, to_pid=EVERYONE, exclude_sender=True, dx=p.dx, dy=p.dy))
 
             async with self._get_db_session() as session:
+                assert self._instanced_entity
                 instanced_entity = await session.get(InstancedEntity, self._instanced_entity.id)
                 instanced_entity.x = self._x
                 instanced_entity.y = self._y
@@ -107,4 +114,5 @@ class LoggedState(BaseState):
             
     # If some protocol is requesting our username, send it to them (this is in response to a `WhichUsernamesPacket` sent by a new connection)
     async def handle_whichusernames(self, p: WhichUsernamesPacket) -> None:
+        assert self._name
         await self._queue_local_protos_send(MyUsernamePacket(from_pid=self._pid, to_pid=p.from_pid, username=self._name))

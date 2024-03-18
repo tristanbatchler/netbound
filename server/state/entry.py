@@ -34,7 +34,7 @@ class EntryState(BaseState):
         # Rate limit login attempts
         if time() - self._last_failed_login_attempt < 5:
             await self._queue_local_client_send(DenyPacket(from_pid=self._pid, reason="Too many failed login attempts. Please wait a few seconds before trying again."))
-            logging.warning(f"Too many failed login attempts from {self._pid}")
+            logging.warning(f"Too many failed login attempts from {self._pid.hex()}")
             return
         
         # Check if user is already logged in
