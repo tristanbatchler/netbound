@@ -1,5 +1,5 @@
 import msgpack
-from server.engine.constants import EVERYONE
+from netbound.constants import EVERYONE
 from pydantic import BaseModel, ValidationError
 from typing import Any, Type, Optional
 import base64

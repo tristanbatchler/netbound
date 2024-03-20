@@ -1,8 +1,8 @@
 from __future__ import annotations
-from server.engine.packet import BasePacket
+from netbound.packet import BasePacket
 from typing import Callable, Optional, Coroutine, Any
 from sqlalchemy.ext.asyncio import async_sessionmaker
-from server.engine.app.logging_adapter import StateLoggingAdapter
+from netbound.app.logging_adapter import StateLoggingAdapter
 from dataclasses import dataclass
 import logging
 

@@ -3,7 +3,7 @@ from server.core.packet import OkPacket, DenyPacket, LoginPacket, RegisterPacket
 from server.core.database.model import User, Entity, InstancedEntity, Player
 from sqlalchemy import select
 from dataclasses import dataclass
-from server.engine.constants import EVERYONE
+from netbound.constants import EVERYONE
 from random import randint
 import bcrypt
 from time import time

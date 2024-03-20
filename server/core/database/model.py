@@ -1,4 +1,4 @@
-from server.engine.database.model import Base
+from netbound.database.model import Base
 from sqlalchemy import Column as mapped_column
 from sqlalchemy import Integer, String, ForeignKey
 

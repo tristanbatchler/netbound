@@ -1,6 +1,6 @@
 import json
 from typing import Any
-from server.engine.packet import BasePacket
+from netbound.packet import BasePacket
 
 DEFINITIONS_FILE: str = "shared/packet/definitions.json"
 

@@ -6,14 +6,14 @@ from typing import Optional
 import websockets as ws
 from ssl import SSLContext
 from uuid import uuid4
-from server.engine.packet import BasePacket, DisconnectPacket, register_packet
-from server.engine.database.model import register_model
-from server.engine.app.protocol import GameProtocol
-from server.engine.constants import EVERYONE
+from netbound.packet import BasePacket, DisconnectPacket, register_packet
+from netbound.database.model import register_model
+from netbound.app.protocol import GameProtocol
+from netbound.constants import EVERYONE
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
-from server.engine.app.logging_adapter import ServerLoggingAdapter
-from server.engine.state import BaseState
+from netbound.app.logging_adapter import ServerLoggingAdapter
+from netbound.state import BaseState
 from types import ModuleType
 
 class ServerApp:

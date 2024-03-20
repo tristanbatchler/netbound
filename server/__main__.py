@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import traceback
-from server.engine.app import ServerApp
+from netbound.app import ServerApp
 from server.core.state import EntryState
 from server.core import packet
 from server.core.database import model
