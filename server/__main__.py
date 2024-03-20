@@ -16,7 +16,18 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
+
     logging.basicConfig(level=logging.INFO)
+    
+    # Silence SQLAlchemy logging
+    sqlalchemy_engine_logger = logging.getLogger('sqlalchemy.engine')
+    sqlalchemy_engine_logger.setLevel(logging.WARNING)
+
+
+    # Set format for logging
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    for handler in logging.getLogger().handlers:
+        handler.setFormatter(formatter)
 
     try:
         asyncio.run(main())

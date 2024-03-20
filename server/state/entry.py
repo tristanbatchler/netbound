@@ -37,7 +37,7 @@ class EntryState(BaseState):
         # Rate limit login attempts
         if time() - self._last_failed_login_attempt < 5:
             await self._queue_local_client_send(DenyPacket(from_pid=self._pid, reason="Too many failed login attempts. Please wait a few seconds before trying again."))
-            logging.warning(f"Too many failed login attempts from {self._pid.hex()}")
+            self._logger.warning(f"Too many failed login attempts from {self._pid.hex()}")
             return
         
         # Check if user is already logged in
@@ -64,7 +64,7 @@ class EntryState(BaseState):
                 salt = bcrypt.gensalt()
                 password_hash = bcrypt.hashpw(p.password.encode(), salt).decode()
                 user: User = User(username=p.username, password=password_hash)
-                logging.info(f"Registering new user {user}")
+                self._logger.info(f"Registering new user {user}")
                 entity: Entity = Entity(name=p.username)
                 
                 session.add(user)

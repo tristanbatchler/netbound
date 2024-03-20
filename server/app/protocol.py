@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from typing import Callable, Coroutine, Any, Optional
 from server.constants import EVERYONE
 from base64 import b64encode
+from server.app.logging_adapter import ProtocolLoggingAdapter
 
 class GameProtocol:
     def __init__(
@@ -19,7 +20,6 @@ class GameProtocol:
             db_session_callback: async_sessionmaker
         ) -> None:
         """WARNING: This class must only be instantiated from within the server.app.ServerApp class"""
-        logging.info(f"Assigned id {b64encode(pid).decode()} to new protocol")
         self._websocket: ws.WebSocketServerProtocol = websocket
         self._pid: bytes = pid
         self._local_receive_packet_queue: asyncio.Queue[pck.BasePacket] = asyncio.Queue()
@@ -28,6 +28,9 @@ class GameProtocol:
         self._disconnect: Callable[[GameProtocol, str], Coroutine[Any, Any, None]] = disconnect_callback
         self._get_db_session: async_sessionmaker = db_session_callback
         self._state: Optional[st.BaseState] = None
+        self._logger: ProtocolLoggingAdapter = ProtocolLoggingAdapter(logging.getLogger(__name__), {
+            'pid': pid
+        })
 
     def __repr__(self) -> str:
         return f"GameProtocol({b64encode(self._pid).decode()})"
@@ -40,35 +43,35 @@ class GameProtocol:
         try:
             await self._listen_websocket()
         except ws.ConnectionClosedError:
-            logging.debug(f"Connection closed for id {b64encode(self._pid).decode()}")
+            self._logger.debug(f"Connection closed")
             await self._disconnect(self, "Client disconnected")
 
     async def _listen_websocket(self) -> None:
-        logging.debug(f"Starting protocol for id {b64encode(self._pid).decode()}")
+        self._logger.debug(f"Starting protocol")
 
         async for message in self._websocket:
             if not isinstance(message, bytes):
-                logging.error(f"Received non-bytes message: {message}")
+                self._logger.error(f"Received non-bytes message: {message}")
                 continue
             
             try:
                 p: pck.BasePacket = pck.deserialize(message)
             except pck.MalformedPacketError as e:
-                logging.error(f"Malformed packet: {e}")
+                self._logger.error(f"Malformed packet: {e}")
                 continue
             except pck.UnknownPacketError as e:
-                logging.error(f"Unknown packet: {e}")
+                self._logger.error(f"Unknown packet: {e}")
                 continue
             except Exception as e:
-                logging.error(f"Unexpected error: {e}")
+                self._logger.error(f"Unexpected error: {e}")
                 continue
 
-            logging.debug(f"Received packet: {p}")
+            self._logger.debug(f"Received packet: {p}")
             
             # Store the packet in our local receive queue for processing next tick
             await self._local_receive_packet_queue.put(p)
 
-        logging.debug(f"{self} stopped")
+        self._logger.debug(f"{self} stopped")
         await self._disconnect(self, "Client disconnected")
 
     async def _change_state(self, new_state: st.BaseState, previous_state_view: Optional[BaseState.View]=None) -> None:
@@ -80,4 +83,4 @@ class GameProtocol:
             p: pck.BasePacket = await self._local_receive_packet_queue.get()
             if self._state:
                 await self._state.handle_packet(p)
-            logging.debug(f"Processed packet: {p}")
+            self._logger.debug(f"Processed packet: {p}")

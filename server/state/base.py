@@ -2,8 +2,9 @@ from __future__ import annotations
 from server.packet import BasePacket
 from typing import Callable, Optional, Coroutine, Any
 from sqlalchemy.ext.asyncio import async_sessionmaker
-import logging
+from server.app.logging_adapter import StateLoggingAdapter
 from dataclasses import dataclass
+import logging
 
 class BaseState:
     @dataclass
@@ -23,6 +24,10 @@ class BaseState:
         self._queue_local_protos_send: Callable[[BasePacket], Coroutine[Any, Any, None]] = queue_local_protos_send_callback
         self._queue_local_client_send: Callable[[BasePacket], Coroutine[Any, Any, None]] = queue_local_client_send_callback
         self._get_db_session: async_sessionmaker = get_db_session_callback
+        self._logger: StateLoggingAdapter = StateLoggingAdapter(logging.getLogger(__name__), {
+            'pid': pid,
+            'state': self.__class__.__name__
+        })
 
     
     @property
@@ -33,7 +38,7 @@ class BaseState:
             if value is not None:
                 params[k] = value
             else:
-                logging.error(f"State {self.__class__.__name__} has no value for {k}")
+                self._logger.error(f"State {self.__class__.__name__} has no value for {k}")
 
         return self.View(**params)
 
@@ -53,4 +58,4 @@ class BaseState:
         if handler := getattr(self, handler_name, None):
             await handler(p)
         else:
-            logging.warning(f"State {self.__class__.__name__} does not have a handler for {packet_name} packets")            
+            self._logger.warning(f"State {self.__class__.__name__} does not have a handler for {packet_name} packets")            
