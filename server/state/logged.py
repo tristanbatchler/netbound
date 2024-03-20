@@ -35,7 +35,7 @@ class LoggedState(BaseState):
             self._name = previous_state_view.username
 
             # Broadcast our username to everyone, just in case a new connection is listening for it to build its list of logged in users (hence avoiding double logins)
-            await self._queue_local_protos_send(MyUsernamePacket(from_pid=self._pid, to_pid=EVERYONE, username=self._name))
+            await self._queue_local_protos_send(MyUsernamePacket(from_pid=self._pid, to_pid=EVERYONE, exclude_sender=True, username=self._name))
         else:
             raise TransitionError("LoggedState requires a username but EntryState did not have one")
         

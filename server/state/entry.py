@@ -27,7 +27,7 @@ class EntryState(BaseState):
         await self._queue_local_client_send(MotdPacket(from_pid=self._pid, message=f"Welcome! It is currently {now.strftime('%A, %B %d %I:%M %p')}--what a time to be alive!"))
 
         # Send out a request for all currently logged in usernames (to avoid double logins)
-        await self._queue_local_protos_send(WhichUsernamesPacket(from_pid=self._pid, to_pid=EVERYONE))
+        await self._queue_local_protos_send(WhichUsernamesPacket(from_pid=self._pid, to_pid=EVERYONE, exclude_sender=True))
 
     # Listen for other protocol's response to our `WhichUsernamesPacket`
     async def handle_myusername(self, p: MyUsernamePacket) -> None:
