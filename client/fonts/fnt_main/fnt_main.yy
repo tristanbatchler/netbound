@@ -110,7 +110,7 @@
     "9647":{"character":9647,"h":14,"offset":2,"shift":11,"w":6,"x":37,"y":82,},
   },
   "hinting":0,
-  "includeTTF":false,
+  "includeTTF":true,
   "interpreter":0,
   "italic":false,
   "kerningPairs":[],
@@ -138,6 +138,6 @@
     "name":"Default",
     "path":"texturegroups/Default",
   },
-  "TTFName":"",
+  "TTFName":"${project_dir}\\fonts\\fnt_main\\droid-sans-mono.ttf",
   "usesSDF":false,
 }

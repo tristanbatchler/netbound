@@ -3,7 +3,12 @@ server/database/netbound.db
 server/database/migrations/versions/*.py
 
 # SSL
-server/app/ssl/
+server/app/ssl/*.pem
+server/app/ssl/*.key
+server/app/ssl/*.crt
+server/app/ssl/*.csr
+server/app/ssl/*.pfx
+server/app/ssl/*.srl
 
 # GameMaker Specific
 client/scripts/Snap*/*
