@@ -3,7 +3,12 @@ function state_entry(_packet_name, _packet_data) {
 		case "Pid":
 			obj_network_client.pid = pid_to_string(_packet_data.from_pid);
 			break;
-		}	
+			
+		case "Motd":
+			obj_chatbox.add_to_log(_packet_data.message);
+			obj_chatbox.add_to_log("Type '/help' to get started");
+			break;
+		}
 }
 
 function state_login(_packet_name, _packet_data) {

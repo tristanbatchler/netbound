@@ -68,6 +68,9 @@ class MyUsernamePacket(BasePacket):
     """Sent to a protocol who has requested the username of the sender (via `WhichUsernamesPacket`)"""
     username: str
 
+class MotdPacket(BasePacket):
+    message: str
+
 class MovePacket(BasePacket):
     dx: int
     dy: int

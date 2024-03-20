@@ -1,6 +1,6 @@
 import logging
 from server.state import BaseState
-from server.packet import LoginPacket, RegisterPacket, OkPacket, PIDPacket, DenyPacket, WhichUsernamesPacket, MyUsernamePacket
+from server.packet import LoginPacket, RegisterPacket, OkPacket, PIDPacket, DenyPacket, WhichUsernamesPacket, MyUsernamePacket, MotdPacket
 from server.database.model import User, Entity, InstancedEntity, Player
 from sqlalchemy import select
 from dataclasses import dataclass
@@ -8,6 +8,7 @@ from server.constants import EVERYONE
 from random import randint
 import bcrypt
 from time import time
+from datetime import datetime as dt
 
 class EntryState(BaseState):
     @dataclass
@@ -22,6 +23,8 @@ class EntryState(BaseState):
 
     async def on_transition(self, *args, **kwargs) -> None:
         await self._queue_local_client_send(PIDPacket(from_pid=self._pid))
+        now: dt = dt.now()
+        await self._queue_local_client_send(MotdPacket(from_pid=self._pid, message=f"Welcome! It is currently {now.strftime('%A, %B %d %I:%M %p')}--what a time to be alive!"))
 
         # Send out a request for all currently logged in usernames (to avoid double logins)
         await self._queue_local_protos_send(WhichUsernamesPacket(from_pid=self._pid, to_pid=EVERYONE))

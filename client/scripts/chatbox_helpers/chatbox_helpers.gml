@@ -15,6 +15,9 @@ function chatbox_process_command(_input_string) {
 	var _command = get_command(_input_string);
 	var _args = get_args(_input_string);
     switch (_command) {
+		case "/help":
+			handle_help(_args);
+			break;
         case "/login":
             handle_login(_args);
             break;
@@ -33,6 +36,13 @@ function chatbox_process_command(_input_string) {
 			});
             break;
     }
+}
+
+function handle_help(_args) {
+	add_to_log("Start by registering with '/register username password'", c_lime);
+	add_to_log("Then you can login with '/login username password'", c_lime);
+	add_to_log("Once you're in the game, you can chat freely or logout with '/logout'", c_lime);
+	add_to_log("You can view this message again any time with '/help'", c_lime);
 }
 
 function handle_login(_args) {
