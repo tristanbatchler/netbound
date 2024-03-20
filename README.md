@@ -14,6 +14,7 @@ pip install -r server/requirements.txt
 ### Create SSL certificate and key (requires openssl)
 1. Become a certificate authority
     ```powershell
+    cd server/core/app/ssl
     # Generate private key (prompted passcode should be memorable, and at least 4 characters long)
     openssl genrsa -des3 -out myCA.key 2048
     # Generate root certificate (prompted passcode should be the same as the private key)
@@ -25,6 +26,7 @@ pip install -r server/requirements.txt
 1. Create a certificate for the server, which falls under our CA
     1. Run the following command to create a new private key and certificate-signing request
     ```powershell
+    cd server/core/app/ssl
     # Generate a private key
     openssl genrsa -out localhost.key 2048
     # Create a certificate-signing request
@@ -51,7 +53,7 @@ pip install -r server/requirements.txt
 ### 👩‍💻 **For Windows users only** 
 > ### Allow `.exe` and HTML5 exports on Edge to connect to the server
 > 
-> 1. First run the following command to concert our CA cert to a `.pfx` file which Windows can readily install
+> 1. First run the following command in the `ssl` directory to convert our CA cert to a `.pfx` file which Windows can readily install
 >    ```powershell
 >    openssl pkcs12 -export -out myCA.pfx -inkey myCA.key -in myCA.pem
 >    ```
