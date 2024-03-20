@@ -7,17 +7,16 @@ import websockets as ws
 from ssl import SSLContext
 from uuid import uuid4
 from netbound.packet import BasePacket, DisconnectPacket, register_packet
-from netbound.database.model import register_model
 from netbound.app.protocol import GameProtocol
 from netbound.constants import EVERYONE
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncEngine
 from netbound.app.logging_adapter import ServerLoggingAdapter
 from netbound.state import BaseState
 from types import ModuleType
 
 class ServerApp:
-    def __init__(self, host: str, port: int, ssl_context: Optional[SSLContext]=None) -> None:
+    def __init__(self, host: str, port: int, db_engine: AsyncEngine, ssl_context: Optional[SSLContext]=None) -> None:
         self._host: str = host
         self._port: int = port
         self._ssl_context: Optional[SSLContext] = ssl_context
@@ -25,7 +24,7 @@ class ServerApp:
         self._connected_protocols: dict[bytes, GameProtocol] = {}
         self._global_protos_packet_queue: asyncio.Queue[BasePacket] = asyncio.Queue()
     
-        self._async_engine: AsyncEngine = create_async_engine("sqlite+aiosqlite:///server/core/database/netbound.db")
+        self._async_engine: AsyncEngine = db_engine
         self._async_session: async_sessionmaker = async_sessionmaker(bind=self._async_engine, class_=AsyncSession, expire_on_commit=False)
 
         self._logger: ServerLoggingAdapter = ServerLoggingAdapter(logging.getLogger(__name__))
@@ -44,13 +43,6 @@ class ServerApp:
                 packet_class = getattr(packet_module, packet_name)
                 if issubclass(packet_class, BasePacket):
                     register_packet(packet_class)
-
-    def register_db_models(self, model_module: ModuleType) -> None:
-        for model_name in dir(model_module):
-            if model_name.endswith("Model"):
-                model_class = getattr(model_module, model_name)
-                if hasattr(model_class, "__table__"):
-                    register_model(model_class)
 
     async def run(self, ticks_per_second: int) -> None:
         tick_rate: float = 1 / ticks_per_second
