@@ -20,6 +20,7 @@ function state_login(_packet_name, _packet_data) {
 		case "Deny":
 			var _reason = _packet_data.reason;
 			obj_chatbox.add_to_log("Cannot login: " + _reason, c_yellow);
+			obj_statemachine.state = state_entry;
 			break;
 	}
 }
@@ -28,10 +29,12 @@ function state_register(_packet_name, _packet_data) {
 		switch (_packet_name) {
 		case "Ok":
 			obj_chatbox.add_to_log("Registered successfully", c_lime);	
+			obj_statemachine.state = state_entry;
 			break;
 		case "Deny":
 			var _reason = _packet_data.reason;
-			obj_chatbox.add_to_log("Cannot register: " + _reason, c_yellow);	
+			obj_chatbox.add_to_log("Cannot register: " + _reason, c_yellow);
+			obj_statemachine.state = state_entry;
 			break;
 	}
 }
