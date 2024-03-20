@@ -4,7 +4,7 @@ import traceback
 from datetime import datetime
 from typing import Optional
 import websockets as ws
-import ssl
+from ssl import SSLContext
 from uuid import uuid4
 from server.engine.packet import BasePacket, DisconnectPacket, register_packet
 from server.engine.database.model import register_model
@@ -17,10 +17,11 @@ from server.engine.state import BaseState
 from types import ModuleType
 
 class ServerApp:
-    def __init__(self, host: str, port: int, ticks_per_second: int) -> None:
+    def __init__(self, host: str, port: int, ssl_context: Optional[SSLContext]=None) -> None:
         self._host: str = host
         self._port: int = port
-        self._tick_rate: float = 1 / ticks_per_second
+        self._ssl_context: Optional[SSLContext] = ssl_context
+
         self._connected_protocols: dict[bytes, GameProtocol] = {}
         self._global_protos_packet_queue: asyncio.Queue[BasePacket] = asyncio.Queue()
     
@@ -33,9 +34,8 @@ class ServerApp:
 
     async def start(self, initial_state: BaseState) -> None:
         self._initial_state = initial_state
-        ssl_context: ssl.SSLContext = self._get_ssl_context("server/core/app/ssl/localhost.crt", "server/core/app/ssl/localhost.key")
         self._logger.info(f"Starting server on {self._host}:{self._port}")
-        async with ws.serve(self.handle_connection, self._host, self._port, ssl=ssl_context):
+        async with ws.serve(self.handle_connection, self._host, self._port, ssl=self._ssl_context):
             await asyncio.Future()
 
     def register_packets(self, packet_module: ModuleType) -> None:
@@ -52,7 +52,8 @@ class ServerApp:
                 if hasattr(model_class, "__table__"):
                     register_model(model_class)
 
-    async def run(self) -> None:
+    async def run(self, ticks_per_second: int) -> None:
+        tick_rate: float = 1 / ticks_per_second
         self._logger.info("Running server tick loop")
         while True:
             start_time: float = datetime.now().timestamp()
@@ -62,23 +63,11 @@ class ServerApp:
                 self._logger.error(f"Unexpected error: {e}")
                 traceback.print_exc()
             elapsed: float = datetime.now().timestamp() - start_time
-            diff: float = self._tick_rate - elapsed
+            diff: float = tick_rate - elapsed
             if diff > 0:
                 await asyncio.sleep(diff)
             elif diff < 0:
                 self._logger.warning("Tick time budget exceeded by %s seconds", -diff)
-
-    def _get_ssl_context(self, certpath: str, keypath: str) -> ssl.SSLContext:
-        self._logger.info("Loading encryption key")
-        ssl_context: ssl.SSLContext = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        try:
-            ssl_context.load_cert_chain(certpath, keypath)
-        except FileNotFoundError:
-            raise FileNotFoundError(f"No encryption key or certificate found. Please generate a pair and save them to {certpath} and {keypath}")
-
-        return ssl_context
-
-
 
     async def handle_connection(self, websocket: ws.WebSocketServerProtocol) -> None:
         self._logger.info(f"New connection from {websocket.remote_address}")
