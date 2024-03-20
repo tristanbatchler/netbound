@@ -36,44 +36,60 @@ function chatbox_process_command(_input_string) {
 }
 
 function handle_login(_args) {
-	obj_statemachine.state = state_login;;
     if (array_length(_args) != 2) {
         add_to_log("Usage: /login username password", c_yellow);
-    } else {
-        obj_network_client.send_packet({
-			login: {
-				username: _args[0],
-				password: _args[1]
-			}
-		});
-    }
+		return;
+	}
+	if (obj_statemachine.state != state_entry) {
+		obj_chatbox.add_to_log("You can't login right now", c_yellow);
+		return;	
+	}
+	
+	obj_statemachine.state = state_login;
+    obj_network_client.send_packet({
+		login: {
+			username: _args[0],
+			password: _args[1]
+		}
+	});
+
 }
 
 function handle_register(_args) {
-	obj_statemachine.state = state_register;
-    if (array_length(_args) != 2) {
+	if (array_length(_args) != 2) {
         add_to_log("Usage: /register username password", c_yellow);
-    } else {
-        obj_network_client.send_packet({
-			register: {
-				username: _args[0],
-				password: _args[1]
-			}
-		});
+		return;
     }
+	if (obj_statemachine.state != state_entry) {
+		obj_chatbox.add_to_log("You can't register right now", c_yellow);
+		return;	
+	}
+	
+	obj_statemachine.state = state_register;
+	obj_network_client.send_packet({
+		register: {
+			username: _args[0],
+			password: _args[1]
+		}
+	});
 }
 
 function handle_logout(_args) {
-	obj_statemachine.state = state_entry;
 	if (array_length(_args) != 0) {
 		add_to_log("Usage: /logout", c_yellow);	
-	} else {
-		obj_network_client.send_packet({
-			disconnect: {
-				to_pid: obj_network_client.everyone,
-				reason: "user logged out"
-			}
-		});
-		game_restart();
+		return;
 	}
+	if (obj_statemachine.state != state_play) {
+		add_to_log("You can't logout right now", c_yellow);
+		return;
+	}
+	
+	obj_statemachine.state = state_entry;
+	obj_network_client.send_packet({
+		disconnect: {
+			to_pid: obj_network_client.everyone,
+			reason: "user logged out"
+		}
+	});
+	game_restart();
 }

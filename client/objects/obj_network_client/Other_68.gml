@@ -18,6 +18,7 @@ switch (_data_type) {
 		var _from_pid = pid_to_string(_packet_data.from_pid);
 		
 		obj_statemachine.state(_packet_name, _packet_data);
+		show_debug_message("Got a " + _packet_name + " packet: " + string(_packet_data));
 		
 		break;
 		
