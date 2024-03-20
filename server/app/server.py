@@ -26,7 +26,7 @@ class ServerApp:
         self._async_session: async_sessionmaker = async_sessionmaker(bind=self._async_engine, class_=AsyncSession, expire_on_commit=False)
 
     async def start(self) -> None:
-        ssl_context: ssl.SSLContext = self._get_ssl_context("server/app/ssl/cert.pem", "server/app/ssl/key.pem")
+        ssl_context: ssl.SSLContext = self._get_ssl_context("server/app/ssl/cert.cer", "server/app/ssl/key.pem")
         logging.info(f"Starting server on {self._host}:{self._port}")
         async with ws.serve(self.handle_connection, self._host, self._port, ssl=ssl_context):
             await asyncio.Future()
