@@ -1,14 +1,14 @@
 # Don't version control the database
-server/database/netbound.db
-server/database/migrations/versions/*.py
+server/core/database/netbound.db
+server/core/database/migrations/versions/*.py
 
 # SSL
-server/app/ssl/*.pem
-server/app/ssl/*.key
-server/app/ssl/*.crt
-server/app/ssl/*.csr
-server/app/ssl/*.pfx
-server/app/ssl/*.srl
+server/core/app/ssl/*.pem
+server/core/app/ssl/*.key
+server/core/app/ssl/*.crt
+server/core/app/ssl/*.csr
+server/core/app/ssl/*.pfx
+server/core/app/ssl/*.srl
 
 # GameMaker Specific
 client/scripts/Snap*/*

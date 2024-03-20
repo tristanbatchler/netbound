@@ -2,14 +2,14 @@ from __future__ import annotations
 import asyncio
 import logging
 import websockets as ws
-import server.packet as pck
-import server.state as st
-from server.state.base import BaseState
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+import server.engine.packet as pck
+import server.engine.state as st
+from server.engine.state.base import BaseState
+from sqlalchemy.ext.asyncio import async_sessionmaker
 from typing import Callable, Coroutine, Any, Optional
-from server.constants import EVERYONE
+from server.engine.constants import EVERYONE
 from base64 import b64encode
-from server.app.logging_adapter import ProtocolLoggingAdapter
+from server.engine.app.logging_adapter import ProtocolLoggingAdapter
 
 class GameProtocol:
     def __init__(
@@ -38,8 +38,8 @@ class GameProtocol:
     def __str__(self) -> str:
         return self.__repr__()
 
-    async def _start(self) -> None:
-        await self._change_state(st.EntryState(self._pid, self._change_state, self._local_protos_send_packet_queue.put, self._local_client_send_packet_queue.put, self._get_db_session))
+    async def _start(self, initial_state: st.BaseState) -> None:
+        await self._change_state(initial_state(self._pid, self._change_state, self._local_protos_send_packet_queue.put, self._local_client_send_packet_queue.put, self._get_db_session))
         try:
             await self._listen_websocket()
         except ws.ConnectionClosedError:

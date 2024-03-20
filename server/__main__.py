@@ -1,14 +1,21 @@
 import asyncio
 import logging
 import traceback
-from server import app
+from server.engine.app import ServerApp
+from server.core.state import EntryState
+from server.core import packet
+from server.core.database import model
 
 async def main() -> None:
     logging.info("Starting server")
 
-    server_app: app.ServerApp = app.ServerApp("localhost", 443, 10)
+    server_app: ServerApp = ServerApp("localhost", 443, 10)
+
+    server_app.register_packets(packet)
+    server_app.register_db_models(model)
+
     async with asyncio.TaskGroup() as tg:
-        tg.create_task(server_app.start())
+        tg.create_task(server_app.start(EntryState))
         tg.create_task(server_app.run())
 
 

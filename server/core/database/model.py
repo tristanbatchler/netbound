@@ -1,9 +1,6 @@
+from server.engine.database.model import Base
+from sqlalchemy import Column as mapped_column
 from sqlalchemy import Integer, String, ForeignKey
-from sqlalchemy.orm import DeclarativeBase, mapped_column
-from typing import Type
-
-class Base(DeclarativeBase):
-    pass
 
 class User(Base):
     __tablename__ = 'users'

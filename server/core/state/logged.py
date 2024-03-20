@@ -1,12 +1,13 @@
 from __future__ import annotations
 import logging
-from server.state import BaseState
+from server.engine.state import BaseState
 from dataclasses import dataclass
-from server.packet import ChatPacket, DisconnectPacket, HelloPacket, MovePacket, MyUsernamePacket, WhichUsernamesPacket
-from server.constants import EVERYONE
+from server.core.packet import ChatPacket, DisconnectPacket, HelloPacket, MovePacket, MyUsernamePacket, WhichUsernamesPacket
+from server.engine.constants import EVERYONE
 from typing import Optional
-from server.state import EntryState, TransitionError
-from server.database.model import User, Entity, InstancedEntity, Player
+from server.core.state import EntryState
+from server.engine.state import TransitionError
+from server.core.database.model import User, Entity, InstancedEntity, Player
 from sqlalchemy import select
 
 class LoggedState(BaseState):

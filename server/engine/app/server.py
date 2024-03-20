@@ -2,16 +2,19 @@ import logging
 import asyncio
 import traceback
 from datetime import datetime
+from typing import Optional
 import websockets as ws
 import ssl
 from uuid import uuid4
-from server.packet import BasePacket, DisconnectPacket
-from server.app.protocol import GameProtocol
-from server.constants import EVERYONE
-from typing import Optional
+from server.engine.packet import BasePacket, DisconnectPacket, register_packet
+from server.engine.database.model import register_model
+from server.engine.app.protocol import GameProtocol
+from server.engine.constants import EVERYONE
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
-from server.app.logging_adapter import ServerLoggingAdapter
+from server.engine.app.logging_adapter import ServerLoggingAdapter
+from server.engine.state import BaseState
+from types import ModuleType
 
 class ServerApp:
     def __init__(self, host: str, port: int, ticks_per_second: int) -> None:
@@ -21,16 +24,33 @@ class ServerApp:
         self._connected_protocols: dict[bytes, GameProtocol] = {}
         self._global_protos_packet_queue: asyncio.Queue[BasePacket] = asyncio.Queue()
     
-        self._async_engine: AsyncEngine = create_async_engine("sqlite+aiosqlite:///server/database/netbound.db")
+        self._async_engine: AsyncEngine = create_async_engine("sqlite+aiosqlite:///server/core/database/netbound.db")
         self._async_session: async_sessionmaker = async_sessionmaker(bind=self._async_engine, class_=AsyncSession, expire_on_commit=False)
 
         self._logger: ServerLoggingAdapter = ServerLoggingAdapter(logging.getLogger(__name__))
 
-    async def start(self) -> None:
-        ssl_context: ssl.SSLContext = self._get_ssl_context("server/app/ssl/localhost.crt", "server/app/ssl/localhost.key")
+        self._initial_state: BaseState | None = None  # This will be set by the the start method
+
+    async def start(self, initial_state: BaseState) -> None:
+        self._initial_state = initial_state
+        ssl_context: ssl.SSLContext = self._get_ssl_context("server/core/app/ssl/localhost.crt", "server/core/app/ssl/localhost.key")
         self._logger.info(f"Starting server on {self._host}:{self._port}")
         async with ws.serve(self.handle_connection, self._host, self._port, ssl=ssl_context):
             await asyncio.Future()
+
+    def register_packets(self, packet_module: ModuleType) -> None:
+        for packet_name in dir(packet_module):
+            if packet_name.endswith("Packet"):
+                packet_class = getattr(packet_module, packet_name)
+                if issubclass(packet_class, BasePacket):
+                    register_packet(packet_class)
+
+    def register_db_models(self, model_module: ModuleType) -> None:
+        for model_name in dir(model_module):
+            if model_name.endswith("Model"):
+                model_class = getattr(model_module, model_name)
+                if hasattr(model_class, "__table__"):
+                    register_model(model_class)
 
     async def run(self) -> None:
         self._logger.info("Running server tick loop")
@@ -64,7 +84,7 @@ class ServerApp:
         self._logger.info(f"New connection from {websocket.remote_address}")
         proto: GameProtocol = GameProtocol(websocket, uuid4().bytes, self._disconnect_protocol, self._async_session)
         self._connected_protocols[proto._pid] = proto
-        await proto._start()
+        await proto._start(self._initial_state)
 
 
     async def _dispatch_packets(self) -> None:
@@ -130,7 +150,7 @@ class ServerApp:
     async def _disconnect_protocol(self, proto: GameProtocol, reason: str) -> None:
         self._logger.info(f"Disconnecting {proto}: {reason}")
         self._connected_protocols.pop(proto._pid)
-        await self._global_protos_packet_queue.put(DisconnectPacket(reason=reason, from_pid=proto._pid, to_pid=EVERYONE))
+        await self._global_protos_packet_queue.put(DisconnectPacket(from_pid=proto._pid, to_pid=EVERYONE, reason=reason))
 
     async def _send_to_client(self, proto: GameProtocol, p: BasePacket) -> None:
         try:
