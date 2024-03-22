@@ -2,12 +2,12 @@ import logging
 import asyncio
 import traceback
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Type
 import websockets as ws
 from ssl import SSLContext
 from uuid import uuid4
 from netbound.packet import BasePacket, DisconnectPacket, register_packet
-from netbound.app.protocol import GameProtocol
+from netbound.app.protocol import _GameProtocol
 from netbound.constants import EVERYONE
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -16,12 +16,46 @@ from netbound.state import BaseState
 from types import ModuleType
 
 class ServerApp:
-    def __init__(self, host: str, port: int, db_engine: AsyncEngine, ssl_context: Optional[SSLContext]=None) -> None:
-        self._host: str = host
-        self._port: int = port
-        self._ssl_context: Optional[SSLContext] = ssl_context
+    """
+    The main server application. Instantiate this class to initialize the server to listen for incoming connections on 
+    the specified host, port, and database engine. Optionally, you can provide an SSLContext object to enable secure connections.
 
-        self._connected_protocols: dict[bytes, GameProtocol] = {}
+    To make the server start listening for incoming client connections, call the `start` method with the initial state 
+    class as the argument (this will be a subclass of `netbound.state.BaseState`).
+
+    To inject custom packets into the server, call the `register_packets` method with the module containing the custom 
+    packets as the argument. Without this step, the server will not be able to recognize custom packets.
+
+    To run the server's main tickloop, call the `run` method with the desired ticks per second as the argument. This will 
+    allow the server to start accepting incoming client packets and dispatching packets from the global queue at the desired 
+    rate. This in turn will allow each connected client's internal state to be updated.
+    """
+    def __init__(self, host: str, port: int, db_engine: AsyncEngine, ssl_context: Optional[SSLContext]=None) -> None:
+        """
+        Initializes the server with the specified host, port, database engine and optional SSL context. 
+
+        To create the database engine, use the `sqlalchemy.ext.asyncio.create_async_engine` function. For example:
+
+        ```
+        from sqlalchemy.ext.asyncio import create_async_engine
+        db_engine = create_async_engine("sqlite+aiosqlite:///database.sqlite3")
+        server = ServerApp("localhost", 8000, db_engine)
+        ```
+
+        To create an SSL context, use the ssl.SSLContext class. For example:
+        
+        ```
+        from ssl import SSLContext, PROTOCOL_TLS_SERVER
+        ssl_context = SSLContext(PROTOCOL_TLS_SERVER)
+        ssl_context.load_cert_chain(certfile, keyfile)
+        ...
+        ```
+        """
+        self.host: str = host
+        self.port: int = port
+        self.ssl_context: Optional[SSLContext] = ssl_context
+
+        self._connected_protocols: dict[bytes, _GameProtocol] = {}
         self._global_protos_packet_queue: asyncio.Queue[BasePacket] = asyncio.Queue()
     
         self._async_engine: AsyncEngine = db_engine
@@ -29,15 +63,23 @@ class ServerApp:
 
         self._logger: ServerLoggingAdapter = ServerLoggingAdapter(logging.getLogger(__name__))
 
-        self._initial_state: BaseState | None = None  # This will be set by the the start method
+        self.initial_state: BaseState | None = None  # This will be set by the the start method
 
-    async def start(self, initial_state: BaseState) -> None:
-        self._initial_state = initial_state
-        self._logger.info(f"Starting server on {self._host}:{self._port}")
-        async with ws.serve(self.handle_connection, self._host, self._port, ssl=self._ssl_context):
+    async def start(self, initial_state: Type[BaseState]) -> None:
+        """
+        Starts listening for incoming connections. The initial state is used to create the state object for each client 
+        that connects. This, in turn, will be used to manage the client's internal state for sending and receiving packets. 
+        The initial state must be a subclass of `netbound.state.BaseState`.
+        """
+        self.initial_state = initial_state
+        self._logger.info(f"Starting server on {self.host}:{self.port}")
+        async with ws.serve(self._handle_connection, self.host, self.port, ssl=self.ssl_context):
             await asyncio.Future()
 
     def register_packets(self, packet_module: ModuleType) -> None:
+        """
+        Registers all packet classes in the specified module. This is required for the server to recognize custom packets.
+        """
         for packet_name in dir(packet_module):
             if packet_name.endswith("Packet"):
                 packet_class = getattr(packet_module, packet_name)
@@ -45,12 +87,17 @@ class ServerApp:
                     register_packet(packet_class)
 
     async def run(self, ticks_per_second: int) -> None:
+        """
+        Runs the server's main tick loop. This will allow the server to start accepting incoming client packets and 
+        dispatching packets from the global queue at the desired rate. This in turn will allow each connected client's 
+        internal state to be updated.
+        """
         tick_rate: float = 1 / ticks_per_second
         self._logger.info("Running server tick loop")
         while True:
             start_time: float = datetime.now().timestamp()
             try:
-                await self.tick()
+                await self._tick()
             except Exception as e:
                 self._logger.error(f"Unexpected error: {e}")
                 traceback.print_exc()
@@ -61,11 +108,11 @@ class ServerApp:
             elif diff < 0:
                 self._logger.warning("Tick time budget exceeded by %s seconds", -diff)
 
-    async def handle_connection(self, websocket: ws.WebSocketServerProtocol) -> None:
+    async def _handle_connection(self, websocket: ws.WebSocketServerProtocol) -> None:
         self._logger.info(f"New connection from {websocket.remote_address}")
-        proto: GameProtocol = GameProtocol(websocket, uuid4().bytes, self._disconnect_protocol, self._async_session)
+        proto: _GameProtocol = _GameProtocol(websocket, uuid4().bytes, self._disconnect_protocol, self._async_session)
         self._connected_protocols[proto._pid] = proto
-        await proto._start(self._initial_state)
+        await proto._start(self.initial_state)
 
 
     async def _dispatch_packets(self) -> None:
@@ -108,7 +155,7 @@ class ServerApp:
                     self._logger.error(f"Packet {p} was sent to a disconnected protocol")
 
 
-    async def tick(self) -> None:
+    async def _tick(self) -> None:
         # Grab the top outbound packet from each protocol and put it in the global queue
         for _, proto in self._connected_protocols.copy().items():
             if not proto._local_protos_send_packet_queue.empty():
@@ -128,12 +175,12 @@ class ServerApp:
         for _, proto in self._connected_protocols.copy().items():
             await proto._process_packets()
 
-    async def _disconnect_protocol(self, proto: GameProtocol, reason: str) -> None:
+    async def _disconnect_protocol(self, proto: _GameProtocol, reason: str) -> None:
         self._logger.info(f"Disconnecting {proto}: {reason}")
         self._connected_protocols.pop(proto._pid)
         await self._global_protos_packet_queue.put(DisconnectPacket(from_pid=proto._pid, to_pid=EVERYONE, reason=reason))
 
-    async def _send_to_client(self, proto: GameProtocol, p: BasePacket) -> None:
+    async def _send_to_client(self, proto: _GameProtocol, p: BasePacket) -> None:
         try:
             await proto._websocket.send(p.serialize())
         except ws.ConnectionClosed as e:

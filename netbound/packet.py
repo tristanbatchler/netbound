@@ -3,14 +3,37 @@ from netbound.constants import EVERYONE
 from pydantic import BaseModel, ValidationError
 from typing import Any, Type, Optional
 import base64
+from abc import ABC
 
-class BasePacket(BaseModel):
+class BasePacket(BaseModel, ABC):
+    """
+    The base packet class. All user-defined packets must inherit from this class.
+    """
+
     from_pid: bytes
-    # If to_pid is None, it is either from the client to its protocol or vice-versa
+    """
+    The PID of the protocol that sent this packet.
+    """
+
     to_pid: Optional[bytes | list[Optional[bytes]]] = None
+    """
+    The PID, or PIDs, of the protocol(s) that this packet is intended for. If left as `None`, it 
+    the packet will be sent to the sender's own client (if the sender is a protocol) or to the 
+    sender's own protocol (if the sender is a client).
+    """
+
     exclude_sender: Optional[bool] = False
+    """
+    If `to_pid` is the special PID `EVERYONE`, this flag can be set to `True` to exclude the sender 
+    from the list of recipients. This can be useful to avoid infinite loops when broadcasting 
+    packets.
+    """
 
     def serialize(self) -> bytes:
+        """
+        Converts the packet to a MessagePack-encoded byte string to be sent over the network. The 
+        PID values are sent as base64-encoded strings.
+        """
         data = {}
         packet_name = self.__class__.__name__.removesuffix("Packet").title()
         m_dump = self.model_dump()
@@ -43,6 +66,9 @@ class BasePacket(BaseModel):
         return self.__repr__()
     
 class DisconnectPacket(BasePacket):
+    """
+    A packet that is broadcasted to all protocols when one protocol disconnects from the server.
+    """
     reason: str
 
 class MalformedPacketError(ValueError):
@@ -52,9 +78,16 @@ class UnknownPacketError(ValueError):
     pass
 
 def register_packet(packet: Type[BasePacket]) -> None:
+    """
+    Injects a user-defined packet into the engine's global namespace so that it can be deserialized.
+    """
     globals()[packet.__name__] = packet
 
 def deserialize(packet_: bytes) -> BasePacket:
+    """
+    Converts a MessagePack-encoded byte string to a packet object. The returned object will be an 
+    instance of the specific packet class that the packet data corresponds to.
+    """
     try:
         packet_dict: dict[str, Any] = msgpack.unpackb(packet_, raw=False)
     except msgpack.StackError:
