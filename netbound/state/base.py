@@ -89,6 +89,13 @@ class BaseState(ABC):
         """
         pass
 
+    async def _tick(self) -> None:
+        """
+        This method is called automatically every game tick. You can use it to perform any kind of logic you want. By default, this 
+        method does nothing. You should **NOT** call this method directly.
+        """
+        pass
+    
     async def _handle_packet(self, p: BasePacket) -> None:
         packet_name: str = p.__class__.__name__.removesuffix("Packet").lower()
         handler_name: str = f"handle_{packet_name}"

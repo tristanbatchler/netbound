@@ -102,13 +102,16 @@ class EntryState:
         super().__init__(*args, **kwargs)
         self._name: str = "entry_state"
 
-    async def on_transition(self, *args, **kwargs) -> None:
+    async def _on_transition(self, *args, **kwargs) -> None:
         await self._queue_local_client_send(ExamplePacket(from_pid=self._pid, my_field="hello", my_other_field=42))
 
         async with self._get_db_session() as session:
             eg: ExampleModel = ExampleModel(my_field="hello", my_other_field=42)
             session.add(eg)
             session.commit()
+
+    async def tick(self) -> None:
+        await self._queue_local_client_send(AnotherPacket(from_pid=self._pid, some_field=[1, 2, 3]))
 
     async def handle_anotherpacket(self, p: AnotherPacket) -> None:
         print("Received another packet with fields:")

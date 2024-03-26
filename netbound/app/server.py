@@ -7,7 +7,7 @@ import websockets as ws
 from ssl import SSLContext
 from uuid import uuid4
 from netbound.packet import BasePacket, DisconnectPacket, register_packet
-from netbound.app.protocol import _GameProtocol
+from netbound.app.protocol import _GameProtocol, _PlayerProtocol
 from netbound.constants import EVERYONE
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -76,6 +76,16 @@ class ServerApp:
         async with ws.serve(self._handle_connection, self.host, self.port, ssl=self.ssl_context):
             await asyncio.Future()
 
+    async def add_npc(self, npc_initial_state: BaseState) -> None:
+        """
+        Adds an NPC to the server. This will create a new connection with the specified initial state and add it to the 
+        list of connected protocols. This will allow the NPC to send and receive packets like any other connected client.
+        """
+        proto: _GameProtocol = _GameProtocol(uuid4().bytes, self._async_engine)
+        self._connected_protocols[proto._pid] = proto
+        await proto._start(npc_initial_state)
+
+
     def register_packets(self, packet_module: ModuleType) -> None:
         """
         Registers all packet classes in the specified module. This is required for the server to recognize custom packets.
@@ -110,7 +120,7 @@ class ServerApp:
 
     async def _handle_connection(self, websocket: ws.WebSocketServerProtocol) -> None:
         self._logger.info(f"New connection from {websocket.remote_address}")
-        proto: _GameProtocol = _GameProtocol(websocket, uuid4().bytes, self._disconnect_protocol, self._async_session)
+        proto: _PlayerProtocol = _PlayerProtocol(websocket, uuid4().bytes, self._disconnect_protocol, self._async_session)
         self._connected_protocols[proto._pid] = proto
         await proto._start(self.initial_state)
 
@@ -170,6 +180,10 @@ class ServerApp:
 
         # Dispatch all packets in the global proto-to-proto queue to their respective protocols' inbound queues
         await self._dispatch_packets()
+
+        # Let each protocol's state tick
+        for _, proto in self._connected_protocols.copy().items():
+            await proto._state._tick()
         
         # Process all inbound packets for each protocol
         for _, proto in self._connected_protocols.copy().items():
@@ -180,7 +194,7 @@ class ServerApp:
         self._connected_protocols.pop(proto._pid)
         await self._global_protos_packet_queue.put(DisconnectPacket(from_pid=proto._pid, to_pid=EVERYONE, reason=reason))
 
-    async def _send_to_client(self, proto: _GameProtocol, p: BasePacket) -> None:
+    async def _send_to_client(self, proto: _PlayerProtocol, p: BasePacket) -> None:
         try:
             await proto._websocket.send(p.serialize())
         except ws.ConnectionClosed as e:

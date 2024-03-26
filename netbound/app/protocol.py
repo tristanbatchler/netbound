@@ -13,17 +13,13 @@ from netbound.app.logging_adapter import ProtocolLoggingAdapter
 class _GameProtocol:
     def __init__(
             self, 
-            websocket: ws.WebSocketServerProtocol, 
             pid: bytes, 
-            disconnect_callback: Callable[[_GameProtocol, str], Coroutine[Any, Any, None]], 
             db_session_callback: async_sessionmaker
         ) -> None:
-        self._websocket: ws.WebSocketServerProtocol = websocket
         self._pid: bytes = pid
         self._local_receive_packet_queue: asyncio.Queue[BasePacket] = asyncio.Queue()
         self._local_protos_send_packet_queue: asyncio.Queue[BasePacket] = asyncio.Queue()
         self._local_client_send_packet_queue: asyncio.Queue[BasePacket] = asyncio.Queue()
-        self._disconnect: Callable[[_GameProtocol, str], Coroutine[Any, Any, None]] = disconnect_callback
         self._get_db_session: async_sessionmaker = db_session_callback
         self._state: Optional[BaseState] = None
         self._logger: ProtocolLoggingAdapter = ProtocolLoggingAdapter(logging.getLogger(__name__), {
@@ -38,6 +34,31 @@ class _GameProtocol:
 
     async def _start(self, initial_state: BaseState) -> None:
         await self._change_state(initial_state(self._pid, self._change_state, self._local_protos_send_packet_queue.put, self._local_client_send_packet_queue.put, self._get_db_session))
+
+    async def _change_state(self, new_state: BaseState, previous_state_view: Optional[BaseState.View]=None) -> None:
+        self._state = new_state
+        await self._state._on_transition(previous_state_view)
+
+    async def _process_packets(self) -> None:
+        while not self._local_receive_packet_queue.empty():
+            p: BasePacket = await self._local_receive_packet_queue.get()
+            if self._state:
+                await self._state._handle_packet(p)
+            self._logger.debug(f"Processed packet: {p}")
+
+class _PlayerProtocol(_GameProtocol):
+    def __init__(self, 
+                 websocket: ws.WebSocketServerProtocol, 
+                 pid: bytes,
+                 disconnect_callback: Callable[[_GameProtocol, str], Coroutine[Any, Any, None]], 
+                 db_session_callback: async_sessionmaker
+        ) -> None:
+        super().__init__(pid, db_session_callback)
+        self._websocket: ws.WebSocketServerProtocol = websocket
+        self._disconnect: Callable[[_GameProtocol, str], Coroutine[Any, Any, None]] = disconnect_callback
+
+    async def _start(self, initial_state: BaseState) -> None:
+        await super()._start(initial_state)
         try:
             await self._listen_websocket()
         except ws.ConnectionClosedError:
@@ -71,14 +92,3 @@ class _GameProtocol:
 
         self._logger.debug(f"{self} stopped")
         await self._disconnect(self, "Client disconnected")
-
-    async def _change_state(self, new_state: BaseState, previous_state_view: Optional[BaseState.View]=None) -> None:
-        self._state = new_state
-        await self._state._on_transition(previous_state_view)
-
-    async def _process_packets(self) -> None:
-        while not self._local_receive_packet_queue.empty():
-            p: BasePacket = await self._local_receive_packet_queue.get()
-            if self._state:
-                await self._state._handle_packet(p)
-            self._logger.debug(f"Processed packet: {p}")
