@@ -1,11 +1,17 @@
 import msgpack
 from netbound.constants import EVERYONE
 from pydantic import BaseModel, ValidationError
-from typing import Any, Type, Optional
+from typing import *
 import base64
 from abc import ABC
 
+Recipient = Optional[bytes]
+Recipients = Optional[Union[List[Recipient], KeysView[Recipient], Set[Recipient], Tuple[Recipient, ...]]]
+
 class BasePacket(BaseModel, ABC):
+    class Config:
+        arbitrary_types_allowed = True
+
     """
     The base packet class. All user-defined packets must inherit from this class.
     """
@@ -15,7 +21,7 @@ class BasePacket(BaseModel, ABC):
     The PID of the protocol that sent this packet.
     """
 
-    to_pid: Optional[bytes | list[Optional[bytes]]] = None
+    to_pid: Recipient | Recipients = None
     """
     The PID, or PIDs, of the protocol(s) that this packet is intended for. If left as `None`, it 
     the packet will be sent to the sender's own client (if the sender is a protocol) or to the 
@@ -28,7 +34,6 @@ class BasePacket(BaseModel, ABC):
     from the list of recipients. This can be useful to avoid infinite loops when broadcasting 
     packets.
     """
-
     def serialize(self) -> bytes:
         """
         Converts the packet to a MessagePack-encoded byte string to be sent over the network. The 

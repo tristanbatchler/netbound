@@ -2,7 +2,7 @@ import logging
 import asyncio
 import traceback
 from datetime import datetime
-from typing import Optional, Type
+from typing import Optional, Type, Iterable
 import websockets as ws
 from ssl import SSLContext
 from uuid import uuid4
@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from netbound.app.logging_adapter import ServerLoggingAdapter
 from netbound.state import BaseState
 from types import ModuleType
+from netbound.packet import Recipient, Recipients
 
 class ServerApp:
     """
@@ -130,7 +131,10 @@ class ServerApp:
             p: BasePacket = await self._global_protos_packet_queue.get()
             self._logger.debug(f"Dispatching {p.__class__.__name__} packet")
             
-            to_pids: list[Optional[bytes]] = p.to_pid if isinstance(p.to_pid, list) else [p.to_pid]
+            to_pids: Recipients = [p.to_pid] if isinstance(p.to_pid, Recipient) else p.to_pid
+            if len(to_pids) == 0:
+                self._logger.error(f"Packet {p} in the global protos queue was dropped because its list of recipients was empty")
+                continue
 
             for to_pid in to_pids:
                 if to_pid is None:
@@ -156,10 +160,11 @@ class ServerApp:
                         if p.exclude_sender and proto._pid == p.from_pid:
                             continue
                         await proto._local_receive_packet_queue.put(p)
+                            
                         self._logger.debug(f"Added {p.__class__.__name__} packet to {proto}'s receive queue")
                 
                 # If we get to here, destination should be a specific PID
-                elif specific_to_proto  := self._connected_protocols.get(to_pid):
+                elif specific_to_proto := self._connected_protocols.get(to_pid):
                     await specific_to_proto._local_receive_packet_queue.put(p)
                 else:
                     self._logger.error(f"Packet {p} was sent to a disconnected protocol")
