@@ -110,9 +110,6 @@ class EntryState:
             session.add(eg)
             session.commit()
 
-    async def tick(self) -> None:
-        await self._queue_local_client_send(AnotherPacket(from_pid=self._pid, some_field=[1, 2, 3]))
-
     async def handle_anotherpacket(self, p: AnotherPacket) -> None:
         print("Received another packet with fields:")
         for n in p.some_field:
@@ -143,5 +140,45 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         logging.info("Server stopped by user")
+```
 
-## Lots more to come...
+# NPCs
+NPCs can be treated as just a special type of player protocol which doesn't have a client. This is exactly how Netbound treats them.
+
+You can add NPCs to your game by first creating a state for them to live in. It can be easy to subclass some sort of `PlayState` you might have for your players, but 
+remember not to use the `self._queue_local_client_send` method. Instead, it is safest to simply override that function to log a warning in the `__init__` method of your NPC state.
+
+NPC states are also where `netbound.schedule` really shines, as it is a non-blocking way to schedule events in the future. This is useful for making NPCs move around, or do other things at certain times.
+
+```python
+# File: npc_state.py
+from netbound import schedule
+from server.packet import ChatPacket
+from netbound.constants import EVERYONE
+from server.state import LoggedState
+
+class BobPlayState(LoggedState):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._queue_local_client_send = lambda p: self._logger.warning(f"NPC tried to send packet to client: {p}")
+
+    async def handle_chat(self, p: ChatPacket) -> None:
+        reply: str = "Hi, I'm Bob!"
+        schedule(
+            1, 
+            lambda: self._queue_local_protos_send(ChatPacket(from_pid=self._pid, to_pid=EVERYONE, exclude_sender=True, message=reply))
+        )
+```
+
+Then, in your main file, you can add the NPC to the server app like so:
+
+```python
+# File: __main__.py
+from server.npc_state import BobPlayState
+
+# ... (regular setup code)
+server_app.add_npc(BobPlayState)
+# ...
+```
+
+This will add an NPC to the server app that will reply to any chat messages with "Hi, I'm Bob!" after 1 second.

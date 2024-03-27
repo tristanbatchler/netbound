@@ -180,10 +180,6 @@ class ServerApp:
 
         # Dispatch all packets in the global proto-to-proto queue to their respective protocols' inbound queues
         await self._dispatch_packets()
-
-        # Let each protocol's state tick
-        for _, proto in self._connected_protocols.copy().items():
-            await proto._state._tick()
         
         # Process all inbound packets for each protocol
         for _, proto in self._connected_protocols.copy().items():
