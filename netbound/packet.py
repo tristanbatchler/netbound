@@ -56,15 +56,15 @@ class BasePacket(BaseModel, ABC):
             d[TO_PID] = "EVERYONE"
         elif self.to_pid is None:
             d[TO_PID] = d[FROM_PID]
-        elif isinstance(self.to_pid, list):
+        elif isinstance(self.to_pid, Recipient):
+            d[TO_PID] = base64.b64encode(self.to_pid).decode()
+        else:
             d[TO_PID] = [
                 base64.b64encode(x).decode()
                 if x else 
                 f"{base64.b64encode(self.from_pid).decode()}'s client"
                 for x in self.to_pid
             ]
-        else:
-            d[TO_PID] = base64.b64encode(self.to_pid).decode()
         return f"{self.__class__.__name__}{d}"
     
     def __str__(self) -> str:
@@ -119,11 +119,13 @@ def deserialize(packet_: bytes) -> BasePacket:
             packet_data[_pid_key] = base64.b64decode(packet_data[_pid_key])
 
 
-    class_name: str = packet_name.title() + "Packet"
-
-    try:
-        packet_class: Type[BasePacket] = globals()[class_name]
-    except KeyError:
+    class_name: str = packet_name.lower() + "packet"
+    packet_class = None
+    for _name, _class in globals().items():
+        if _name.lower() == class_name:
+            packet_class = _class
+            break
+    if packet_class is None:
         raise UnknownPacketError(f"Packet name not recognized: {packet_name}")
     
     try:
