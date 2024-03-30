@@ -160,7 +160,10 @@ from server.state import LoggedState
 class BobPlayState(LoggedState):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._queue_local_client_send = lambda p: self._logger.warning(f"NPC tried to send packet to client: {p}")
+        self._queue_local_client_send = self._dummy_queue_local_client_send
+
+    async def _dummy_queue_local_client_send(self, p: BasePacket) -> None:
+        logging.warning(f"NPC {self._name} tried to send a packet to its non-existant client: {p}")
 
     async def handle_chat(self, p: ChatPacket) -> None:
         reply: str = "Hi, I'm Bob!"
@@ -182,3 +185,87 @@ server_app.add_npc(BobPlayState)
 ```
 
 This will add an NPC to the server app that will reply to any chat messages with "Hi, I'm Bob!" after 1 second.
+
+# Game objects
+Sometimes the server needs to keep track of objects in the game that aren't necessarily players, NPCs or models belonging to the database. 
+For example, you might want to keep track of the positions of all the bullets in a shooter game. This is where game objects come in.
+
+Instead of making each protocol state keep track of its own game objects (which would be a waste of resources), Netbound provides a way to 
+keep track of these objects in one place, and pass them along to the protocol states that need them.
+
+To define your own game objects, simply subclass `netbound.app.game.GameObject`, override the `update` method, and add them to the state's 
+`_game_objects` set.
+
+```python
+# File: bullet.py
+
+from netbound.app.game import GameObject
+
+class Bullet(GameObject):
+    def __init__(self, x: float, y: float, x_dir: int, y_dir: int, shooter_pid: bytes) -> None:
+        super().__init__()
+        self.x: float = x
+        self.y: float = y
+        self.x_dir: int = x_dir
+        self.y_dir: int = y_dir
+        self.speed: float = 450.0
+        self.shooter_pid: bytes = shooter_pid
+
+    def update(self, delta: float) -> None:
+        self.x += self.x_dir * self.speed * delta
+        self.y += self.y_dir * self.speed * delta
+```
+
+Then, in your state, you could add a bullet like so:
+
+```python
+# File: play_state.py
+...
+async def handle_shootbullet(self, p: pck.ShootBulletPacket) -> None:
+    if p.from_pid == self._pid:
+        await self._queue_local_protos_send(pck.ShootBulletPacket(from_pid=self._pid, to_pid=p.to_pid, exclude_sender=True, dx=p.dx, dy=p.dy))
+        bullet: obj.Fireball = obj.Fireball(self._x, self._y, p.dx, p.dy, self._pid)
+        self._game_objects.add(bullet)  # This is the line you need to add
+    else:
+        await self._queue_local_client_send(pck.ShootBulletPacket(from_pid=p.from_pid, dx=p.dx, dy=p.dy))
+```
+
+In other words, if a `ShootBullet` packet is received from the client, the server will add a new `Bullet` object to the state's `_game_objects` set, 
+which is shared across all protocol states.
+
+To actually tell the server to process these game objects, you need to call the server's `process_game_objects` method. Here, you pass in the game's 
+framerate, which is often much higher than the server's tick rate. For this reason, it is very important to keep the `update` method of your game objects 
+as lightweight as possible.
+
+```python
+# File: __main__.py
+...
+async with asyncio.TaskGroup() as tg:
+    tg.create_task(server_app.start(initial_state=EntryState))
+    tg.create_task(server_app.run(ticks_per_second=10))
+    tg.create_task(server_app.process_game_objects(60))  # This is the line you need to add
+```
+
+When you want to delete a game object, simply call the `queue_free()` method on it. Netbound will 
+automatically remove it from the universal `_game_objects` set on the next game frame.
+
+In terms of querying game objects from a protocol state, you can use the `netbound.schedule` function 
+to recursively search for the object you want. For example, if you wanted to find if you have been hit 
+by a bullet, you could do something like this:
+
+```python
+# File: play_state.py
+...
+
+async def _on_transition(self, previous_state_view: BaseState.View | None = None) -> None:
+    await self._check_bullet_collisions()
+
+async def _check_bullet_collisions(self) -> None:
+    schedule(1/60, self._check_bullet_collisions)  # Recursively make sure this function is called every frame
+    for bullet in self._game_objects.copy():  # Make a copy of the set to avoid modifying it while iterating
+        if not isinstance(bullet, obj.Bullet):
+            continue
+
+        if self._is_colliding_with_bullet(bullet):  # This is a custom method you would need to implement
+            await self._queue_local_protos_send(pck.HitByBulletPacket(from_pid=self._pid, to_pid=EVERYONE))  # For example
+            bullet.queue_free()  # This will remove the bullet from the game objects set on the next frame

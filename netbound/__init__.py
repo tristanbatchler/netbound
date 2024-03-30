@@ -8,8 +8,7 @@ from asyncio import ensure_future, get_event_loop, TimerHandle, AbstractEventLoo
 def schedule(timeout: float, coro: Coroutine[Any, Any, None]) -> TimerHandle:
     """
     Schedule a coroutine to run after a certain amount of time (in seconds). This will ensure that 
-    the awaitable is performed in a non-blocking manner, e.g. if you want to use this in a state's 
-    `tick()` method.
+    the awaitable is performed in a non-blocking manner. 
 
     This function returns an `asyncio.TimeHandle` object, which can be cancelled by calling e.g.
     ```

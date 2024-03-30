@@ -3,6 +3,7 @@ from netbound.packet import BasePacket
 from typing import Callable, Optional, Coroutine, Any
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from netbound.app.logging_adapter import StateLoggingAdapter
+from netbound.app.game import GameObject
 from dataclasses import dataclass
 import logging
 from abc import ABC
@@ -26,6 +27,7 @@ class BaseState(ABC):
     def __init__(
             self, 
             pid: bytes, 
+            game_objects: set[GameObject],
             change_state_callback: Callable[[BaseState, BaseState.View], Coroutine[Any, Any, None]], 
             queue_local_protos_send_callback: Callable[[BasePacket], Coroutine[Any, Any, None]],
             queue_local_client_send_callback: Callable[[BasePacket], Coroutine[Any, Any, None]], 
@@ -38,6 +40,7 @@ class BaseState(ABC):
         function, will take care of a lot of this for you.
         """
         self._pid: bytes = pid
+        self._game_objects: set[GameObject] = game_objects
         self._change_states: Callable[[BaseState, BaseState.View], Coroutine[Any, Any, None]] = change_state_callback
         self._queue_local_protos_send: Callable[[BasePacket], Coroutine[Any, Any, None]] = queue_local_protos_send_callback
         self._queue_local_client_send: Callable[[BasePacket], Coroutine[Any, Any, None]] = queue_local_client_send_callback
@@ -80,7 +83,7 @@ class BaseState(ABC):
         By passing the public view, the new state can access some of the "old" state's internal variables by way of the `_on_transition` 
         method's implemtnation.
         """
-        await self._change_states(new_state(self._pid, self._change_states, self._queue_local_protos_send, self._queue_local_client_send, self._get_db_session), self.view)
+        await self._change_states(new_state(self._pid, self._game_objects, self._change_states, self._queue_local_protos_send, self._queue_local_client_send, self._get_db_session), self.view)
 
     async def _on_transition(self, previous_state_view: Optional[BaseState.View]=None) -> None:
         """

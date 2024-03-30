@@ -7,12 +7,14 @@ import websockets as ws
 from ssl import SSLContext
 from uuid import uuid4
 from netbound.packet import BasePacket, DisconnectPacket, register_packet
+from netbound.app.game import GameObject
 from netbound.app.protocol import _GameProtocol, _PlayerProtocol
 from netbound.constants import EVERYONE
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.ext.asyncio import AsyncEngine
 from netbound.app.logging_adapter import ServerLoggingAdapter
 from netbound.state import BaseState
+from netbound import schedule
 from types import ModuleType
 from netbound.packet import Recipient, Recipients
 
@@ -57,6 +59,7 @@ class ServerApp:
         self.ssl_context: Optional[SSLContext] = ssl_context
 
         self._connected_protocols: dict[bytes, _GameProtocol] = {}
+        self._game_objects: set[GameObject] = set()
         self._global_protos_packet_queue: asyncio.Queue[BasePacket] = asyncio.Queue()
     
         self._async_engine: AsyncEngine = db_engine
@@ -82,7 +85,7 @@ class ServerApp:
         Adds an NPC to the server. This will create a new connection with the specified initial state and add it to the 
         list of connected protocols. This will allow the NPC to send and receive packets like any other connected client.
         """
-        proto: _GameProtocol = _GameProtocol(uuid4().bytes, self._async_engine)
+        proto: _GameProtocol = _GameProtocol(uuid4().bytes, self._game_objects, self._async_engine)
         self._connected_protocols[proto._pid] = proto
         await proto._start(npc_initial_state)
 
@@ -101,7 +104,7 @@ class ServerApp:
         """
         Runs the server's main tick loop. This will allow the server to start accepting incoming client packets and 
         dispatching packets from the global queue at the desired rate. This in turn will allow each connected client's 
-        internal state to be updated.
+        internal state to be updated. 
         """
         tick_rate: float = 1 / ticks_per_second
         self._logger.info("Running server tick loop")
@@ -119,9 +122,37 @@ class ServerApp:
             elif diff < 0:
                 self._logger.warning("Tick time budget exceeded by %s seconds", -diff)
 
+    async def process_game_objects(self, game_fps: int):
+        """
+        Processes objects that belong to the game world, but aren't connected to the server. This is 
+        typically done at a much higher frequency than the server's tick rate, and is useful for things 
+        like updating the positions of projectiles, enemies, etc. This is done on the server itself 
+        (rather than by protocol states) so that game objects are processed in a single thread. 
+        Protocol states can read into this data to update their own internal state.
+        """
+        frame_rate: float = 1 / game_fps
+        delta: float = frame_rate
+        while True:
+            start_time: float = datetime.now().timestamp()
+            for game_object in self._game_objects.copy():
+                if game_object.freed:
+                    self._game_objects.remove(game_object)
+                    self._logger.info(f"Removed {game_object} from game objects")
+                    continue
+                game_object.update(delta)
+            elapsed: float = datetime.now().timestamp() - start_time
+            diff: float = frame_rate - elapsed
+            if diff > 0:
+                await asyncio.sleep(diff)
+            elif diff < 0:
+                self._logger.warning("Game object processing time budget exceeded by %s seconds", -diff)
+            delta = datetime.now().timestamp() - start_time
+            
+        
+
     async def _handle_connection(self, websocket: ws.WebSocketServerProtocol) -> None:
         self._logger.info(f"New connection from {websocket.remote_address}")
-        proto: _PlayerProtocol = _PlayerProtocol(websocket, uuid4().bytes, self._disconnect_protocol, self._async_session)
+        proto: _PlayerProtocol = _PlayerProtocol(websocket, uuid4().bytes, self._game_objects, self._disconnect_protocol, self._async_session)
         self._connected_protocols[proto._pid] = proto
         await proto._start(self.initial_state)
 

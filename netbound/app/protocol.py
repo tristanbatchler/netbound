@@ -4,6 +4,7 @@ import logging
 import websockets as ws
 from netbound.packet import BasePacket, deserialize, MalformedPacketError, UnknownPacketError
 from netbound.state import BaseState
+from netbound.app.game import GameObject
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from typing import Callable, Coroutine, Any, Optional
 from netbound.constants import EVERYONE
@@ -14,9 +15,11 @@ class _GameProtocol:
     def __init__(
             self, 
             pid: bytes, 
+            game_objects: set[GameObject], 
             db_session_callback: async_sessionmaker
         ) -> None:
         self._pid: bytes = pid
+        self._game_objects: set[GameObject] = game_objects
         self._local_receive_packet_queue: asyncio.Queue[BasePacket] = asyncio.Queue()
         self._local_protos_send_packet_queue: asyncio.Queue[BasePacket] = asyncio.Queue()
         self._local_client_send_packet_queue: asyncio.Queue[BasePacket] = asyncio.Queue()
@@ -33,7 +36,7 @@ class _GameProtocol:
         return self.__repr__()
 
     async def _start(self, initial_state: BaseState) -> None:
-        await self._change_state(initial_state(self._pid, self._change_state, self._local_protos_send_packet_queue.put, self._local_client_send_packet_queue.put, self._get_db_session))
+        await self._change_state(initial_state(self._pid, self._game_objects, self._change_state, self._local_protos_send_packet_queue.put, self._local_client_send_packet_queue.put, self._get_db_session))
 
     async def _change_state(self, new_state: BaseState, previous_state_view: Optional[BaseState.View]=None) -> None:
         self._state = new_state
@@ -50,10 +53,11 @@ class _PlayerProtocol(_GameProtocol):
     def __init__(self, 
                  websocket: ws.WebSocketServerProtocol, 
                  pid: bytes,
+                 game_objects: set[GameObject], 
                  disconnect_callback: Callable[[_GameProtocol, str], Coroutine[Any, Any, None]], 
                  db_session_callback: async_sessionmaker
         ) -> None:
-        super().__init__(pid, db_session_callback)
+        super().__init__(pid, game_objects, db_session_callback)
         self._websocket: ws.WebSocketServerProtocol = websocket
         self._disconnect: Callable[[_GameProtocol, str], Coroutine[Any, Any, None]] = disconnect_callback
 
