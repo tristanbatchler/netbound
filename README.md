@@ -103,7 +103,7 @@ class EntryState:
         self._name: str = "entry_state"
 
     async def _on_transition(self, *args, **kwargs) -> None:
-        await self._queue_local_client_send(ExamplePacket(from_pid=self._pid, my_field="hello", my_other_field=42))
+        await self._send_to_client(ExamplePacket(from_pid=self._pid, my_field="hello", my_other_field=42))
 
         async with self._get_db_session() as session:
             eg: ExampleModel = ExampleModel(my_field="hello", my_other_field=42)
@@ -146,7 +146,7 @@ if __name__ == "__main__":
 NPCs can be treated as just a special type of player protocol which doesn't have a client. This is exactly how Netbound treats them.
 
 You can add NPCs to your game by first creating a state for them to live in. It can be easy to subclass some sort of `PlayState` you might have for your players, but 
-remember not to use the `self._queue_local_client_send` method. Instead, it is safest to simply override that function to log a warning in the `__init__` method of your NPC state.
+remember not to use the `self._send_to_client` method. Instead, it is safest to simply override that function to log a warning in the `__init__` method of your NPC state.
 
 NPC states are also where `netbound.schedule` really shines, as it is a non-blocking way to schedule events in the future. This is useful for making NPCs move around, or do other things at certain times.
 
@@ -160,16 +160,16 @@ from server.state import LoggedState
 class BobPlayState(LoggedState):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._queue_local_client_send = self._dummy_queue_local_client_send
+        self._send_to_client = self._dummy_send_to_client
 
-    async def _dummy_queue_local_client_send(self, p: BasePacket) -> None:
+    async def _dummy_send_to_client(self, p: BasePacket) -> None:
         logging.warning(f"NPC {self._name} tried to send a packet to its non-existant client: {p}")
 
     async def handle_chat(self, p: ChatPacket) -> None:
         reply: str = "Hi, I'm Bob!"
         schedule(
             1, 
-            lambda: self._queue_local_protos_send(ChatPacket(from_pid=self._pid, to_pid=EVERYONE, exclude_sender=True, message=reply))
+            lambda: self._send_to_other(ChatPacket(from_pid=self._pid, to_pid=EVERYONE, exclude_sender=True, message=reply))
         )
 ```
 
@@ -223,11 +223,11 @@ Then, in your state, you could add a bullet like so:
 ...
 async def handle_shootbullet(self, p: pck.ShootBulletPacket) -> None:
     if p.from_pid == self._pid:
-        await self._queue_local_protos_send(pck.ShootBulletPacket(from_pid=self._pid, to_pid=p.to_pid, exclude_sender=True, dx=p.dx, dy=p.dy))
+        await self._send_to_other(pck.ShootBulletPacket(from_pid=self._pid, to_pid=p.to_pid, exclude_sender=True, dx=p.dx, dy=p.dy))
         bullet: obj.Fireball = obj.Fireball(self._x, self._y, p.dx, p.dy, self._pid)
         self._game_objects.add(bullet)  # This is the line you need to add
     else:
-        await self._queue_local_client_send(pck.ShootBulletPacket(from_pid=p.from_pid, dx=p.dx, dy=p.dy))
+        await self._po_(pck.ShootBulletPacket(from_pid=p.from_pid, dx=p.dx, dy=p.dy))
 ```
 
 In other words, if a `ShootBullet` packet is received from the client, the server will add a new `Bullet` object to the state's `_game_objects` set, 
@@ -267,5 +267,5 @@ async def _check_bullet_collisions(self) -> None:
             continue
 
         if self._is_colliding_with_bullet(bullet):  # This is a custom method you would need to implement
-            await self._queue_local_protos_send(pck.HitByBulletPacket(from_pid=self._pid, to_pid=EVERYONE))  # For example
+            await self._send_to_other(pck.HitByBulletPacket(from_pid=self._pid, to_pid=EVERYONE))  # For example
             bullet.queue_free()  # This will remove the bullet from the game objects set on the next frame

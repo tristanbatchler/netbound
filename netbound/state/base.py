@@ -42,8 +42,8 @@ class BaseState(ABC):
         self._pid: bytes = pid
         self._game_objects: set[GameObject] = game_objects
         self._change_states: Callable[[BaseState, BaseState.View], Coroutine[Any, Any, None]] = change_state_callback
-        self._queue_local_protos_send: Callable[[BasePacket], Coroutine[Any, Any, None]] = queue_local_protos_send_callback
-        self._queue_local_client_send: Callable[[BasePacket], Coroutine[Any, Any, None]] = queue_local_client_send_callback
+        self._send_to_other: Callable[[BasePacket], Coroutine[Any, Any, None]] = queue_local_protos_send_callback
+        self._send_to_client: Callable[[BasePacket], Coroutine[Any, Any, None]] = queue_local_client_send_callback
         self._get_db_session: async_sessionmaker = get_db_session_callback
         self._logger: StateLoggingAdapter = StateLoggingAdapter(logging.getLogger(__name__), {
             'pid': pid,
@@ -83,7 +83,7 @@ class BaseState(ABC):
         By passing the public view, the new state can access some of the "old" state's internal variables by way of the `_on_transition` 
         method's implemtnation.
         """
-        await self._change_states(new_state(self._pid, self._game_objects, self._change_states, self._queue_local_protos_send, self._queue_local_client_send, self._get_db_session), self.view)
+        await self._change_states(new_state(self._pid, self._game_objects, self._change_states, self._send_to_other, self._send_to_client, self._get_db_session), self.view)
 
     async def _on_transition(self, previous_state_view: Optional[BaseState.View]=None) -> None:
         """
