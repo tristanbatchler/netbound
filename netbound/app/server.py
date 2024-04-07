@@ -7,7 +7,7 @@ import websockets as ws
 from ssl import SSLContext
 from uuid import uuid4
 from netbound.packet import BasePacket, DisconnectPacket, register_packet
-from netbound.app.game import GameObject
+from netbound.app.game import GameObject, GameObjectsSet
 from netbound.app.protocol import _GameProtocol, _PlayerProtocol
 from netbound.constants import EVERYONE
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -59,7 +59,7 @@ class ServerApp:
         self.ssl_context: Optional[SSLContext] = ssl_context
 
         self._connected_protocols: dict[bytes, _GameProtocol] = {}
-        self._game_objects: set[GameObject] = set()
+        self._game_objects: GameObjectsSet = GameObjectsSet()
         self._global_protos_packet_queue: asyncio.Queue[BasePacket] = asyncio.Queue()
     
         self._async_engine: AsyncEngine = db_engine
@@ -142,10 +142,6 @@ class ServerApp:
         while True:
             start_time: float = datetime.now().timestamp()
             for game_object in self._game_objects.copy():
-                if game_object.freed:
-                    self._game_objects.remove(game_object)
-                    self._logger.info(f"Removed {game_object} from game objects")
-                    continue
                 game_object.update(delta)
             elapsed: float = datetime.now().timestamp() - start_time
             diff: float = frame_rate - elapsed

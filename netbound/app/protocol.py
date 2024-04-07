@@ -4,7 +4,7 @@ import logging
 import websockets as ws
 from netbound.packet import BasePacket, deserialize, MalformedPacketError, UnknownPacketError
 from netbound.state import BaseState
-from netbound.app.game import GameObject
+from netbound.app.game import GameObject, GameObjectsSet
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from typing import Callable, Coroutine, Any, Optional
 from netbound.constants import EVERYONE
@@ -15,11 +15,11 @@ class _GameProtocol:
     def __init__(
             self, 
             pid: bytes, 
-            game_objects: set[GameObject], 
+            game_objects: GameObjectsSet, 
             db_session_callback: async_sessionmaker
         ) -> None:
         self._pid: bytes = pid
-        self._game_objects: set[GameObject] = game_objects
+        self._game_objects: GameObjectsSet = game_objects
         self._local_receive_packet_queue: asyncio.Queue[BasePacket] = asyncio.Queue()
         self._local_protos_send_packet_queue: asyncio.Queue[BasePacket] = asyncio.Queue()
         self._local_client_send_packet_queue: asyncio.Queue[BasePacket] = asyncio.Queue()

@@ -246,8 +246,32 @@ async with asyncio.TaskGroup() as tg:
     tg.create_task(server_app.process_game_objects(60))  # This is the line you need to add
 ```
 
-When you want to delete a game object, simply call the `queue_free()` method on it. Netbound will 
-automatically remove it from the universal `_game_objects` set on the next game frame.
+When you want to delete a game object, simply pass it into the `_game_objects.discard` method. If you 
+want to ensure only one object of a certain type exists, you can decorate the class with the `@unique` 
+decorate (found in `netbound.app.game`). This will have the effect that any new additions of that type to 
+`_game_objects` will replace the old one.
+
+```python
+# File: hat.py
+from netbound.app.game import GameObject, unique
+
+@unique
+class Hat(GameObject):
+    def __init__(self, x: float, y: float) -> None:
+        super().__init__()
+        self.x: float = x
+        self.y: float = y
+```
+
+```python
+# File: example.py
+...
+    hat1: obj.Hat = obj.Hat(0, 0)
+    self._game_objects.add(hat)
+    hat2: obj.Hat = obj.Hat(1, 1)
+    self._game_objects.add(hat)  # This will replace the old hat
+...
+```
 
 In terms of querying game objects from a protocol state, you can use the `netbound.schedule` function 
 to recursively search for the object you want. For example, if you wanted to find if you have been hit 

@@ -3,7 +3,7 @@ from netbound.packet import BasePacket
 from typing import Callable, Optional, Coroutine, Any
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from netbound.app.logging_adapter import StateLoggingAdapter
-from netbound.app.game import GameObject
+from netbound.app.game import GameObject, GameObjectsSet
 from dataclasses import dataclass
 import logging
 from abc import ABC
@@ -27,7 +27,7 @@ class BaseState(ABC):
     def __init__(
             self, 
             pid: bytes, 
-            game_objects: set[GameObject],
+            game_objects: GameObjectsSet,
             change_state_callback: Callable[[BaseState, BaseState.View], Coroutine[Any, Any, None]], 
             queue_local_protos_send_callback: Callable[[BasePacket], Coroutine[Any, Any, None]],
             queue_local_client_send_callback: Callable[[BasePacket], Coroutine[Any, Any, None]], 
@@ -40,7 +40,7 @@ class BaseState(ABC):
         function, will take care of a lot of this for you.
         """
         self._pid: bytes = pid
-        self._game_objects: set[GameObject] = game_objects
+        self._game_objects: GameObjectsSet = game_objects
         self._change_states: Callable[[BaseState, BaseState.View], Coroutine[Any, Any, None]] = change_state_callback
         self._send_to_other: Callable[[BasePacket], Coroutine[Any, Any, None]] = queue_local_protos_send_callback
         self._send_to_client: Callable[[BasePacket], Coroutine[Any, Any, None]] = queue_local_client_send_callback
