@@ -263,6 +263,9 @@ class Hat(GameObject):
         self.y: float = y
 ```
 
+If you want to obtain the unique instance of a game object (if it exists), you can use the `get_unique` method
+of `_game_objects`.
+
 ```python
 # File: example.py
 ...
