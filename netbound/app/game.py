@@ -49,7 +49,11 @@ class GameObject:
     like a projectile. The update method is called by the server at every game frame (e.g. 60 times per 
     second) to update the object's state. Therefore, the update logic should be kept as lightweight as 
     possible.
+
+    To indicate that only one instance of this class should be stored in the GameObjectsSet, decorate 
+    the class with the `unique` decorator.
     """
+    unique_class: bool = False
     def update(self, delta: float):
         """
         Update the state of the object. This method is called by the server at every game frame, so it 
