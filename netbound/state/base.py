@@ -14,6 +14,7 @@ class BaseState(ABC):
     * `View` - a dataclass that represents the state's public view. This should contain variables that have the same name as this state's internal variables, but with no leading underscore
     * `_on_transition` - a method that automatically fires when the state is changed, and has access to the previous state's public view
     * `handle_packetnamehere` - a method that automatically fires when a packet of type `PacketNameHerePacket` is received (you will create as many or as few of these as you need for this state)
+    * `_on_disconnect` - a method that automatically fires when the client disconnects - this should perform any necessary cleanup
     """
     @dataclass
     class View:
@@ -99,3 +100,10 @@ class BaseState(ABC):
             await handler(p)
         else:
             self._logger.warning(f"State {self.__class__.__name__} does not have a handler for {packet_name} packets")            
+
+    async def _on_disconnect(self):
+        """
+        Called when the client disconnects. By default, this method does nothing. You should **NOT** call this method directly, but are 
+        certainly encouraged to override it.
+        """
+        pass

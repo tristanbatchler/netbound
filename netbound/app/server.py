@@ -226,6 +226,7 @@ class ServerApp:
 
     async def _disconnect_protocol(self, proto: _GameProtocol, reason: str) -> None:
         self._logger.info(f"Disconnecting {proto}: {reason}")
+        await proto._state._on_disconnect()
         self._connected_protocols.pop(proto._pid)
         await self._global_protos_packet_queue.put(DisconnectPacket(from_pid=proto._pid, to_pid=EVERYONE, reason=reason))
 
