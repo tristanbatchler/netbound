@@ -9,7 +9,7 @@ class GameObject:
     def __init__(self):
         self.freed: bool = False 
 
-    def update(self):
+    def update(self, delta: float):
         """
         Update the state of the object. This method is called by the server at every game frame, so it 
         should be kept as lightweight as possible.

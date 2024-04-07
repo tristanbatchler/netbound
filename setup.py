@@ -7,7 +7,7 @@ dependencies = (this_directory / "requirements.txt").read_text().splitlines()
 
 setup(
     name='netbound',
-    version='0.1.15',
+    version='0.1.16',
     packages=find_packages(),
     url='https://github.com/tristanbatchler/netbound',
     install_requires=dependencies,

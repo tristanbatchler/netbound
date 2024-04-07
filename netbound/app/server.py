@@ -90,6 +90,13 @@ class ServerApp:
         await proto._start(npc_initial_state)
 
 
+    def add_game_object(self, game_object: GameObject) -> None:
+        """
+        Adds a game object to the server. This is useful for initially populating the game world with objects that should 
+        be kept track of, but do not necessarily need to be stored in the database (hence are not models).
+        """
+        self._game_objects.add(game_object)
+
     def register_packets(self, packet_module: ModuleType) -> None:
         """
         Registers all packet classes in the specified module. This is required for the server to recognize custom packets.
