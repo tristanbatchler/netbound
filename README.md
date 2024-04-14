@@ -296,3 +296,12 @@ async def _check_bullet_collisions(self) -> None:
         if self._is_colliding_with_bullet(bullet):  # This is a custom method you would need to implement
             await self._send_to_other(pck.HitByBulletPacket(from_pid=self._pid, to_pid=EVERYONE))  # For example
             bullet.queue_free()  # This will remove the bullet from the game objects set on the next frame
+```
+
+# Custom serializers and deserializers for packets
+Netbound by default uses MessagePack for serialization and deserialization of packets. If you want to use a different format, you can 
+create a subclass of the `netbound.packet.serializer.BaseSerializer` class and pass it to the server app via 
+```python
+server_app: ServerApp = ServerApp("localhost", 443)
+server_app.set_serializer(MyCustomSerializer())
+```

@@ -2,7 +2,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import websockets as ws
-from netbound.packet import BasePacket, deserialize, MalformedPacketError, UnknownPacketError
+from netbound.packet import BasePacket, MalformedPacketError, UnknownPacketError
+from netbound.packet.serializer import BaseSerializer
 from netbound.state import BaseState
 from netbound.app.game import GameObject, GameObjectsSet
 from sqlalchemy.ext.asyncio import async_sessionmaker
@@ -16,7 +17,8 @@ class _GameProtocol:
             self, 
             pid: bytes, 
             game_objects: GameObjectsSet, 
-            db_session_callback: async_sessionmaker
+            db_session_callback: async_sessionmaker, 
+            serializer: BaseSerializer
         ) -> None:
         self._pid: bytes = pid
         self._game_objects: GameObjectsSet = game_objects
@@ -24,6 +26,7 @@ class _GameProtocol:
         self._local_protos_send_packet_queue: asyncio.Queue[BasePacket] = asyncio.Queue()
         self._local_client_send_packet_queue: asyncio.Queue[BasePacket] = asyncio.Queue()
         self._get_db_session: async_sessionmaker = db_session_callback
+        self._serializer: BaseSerializer = serializer
         self._state: Optional[BaseState] = None
         self._logger: ProtocolLoggingAdapter = ProtocolLoggingAdapter(logging.getLogger(__name__), {
             'pid': pid
@@ -51,13 +54,14 @@ class _GameProtocol:
 
 class _PlayerProtocol(_GameProtocol):
     def __init__(self, 
-                 websocket: ws.WebSocketServerProtocol, 
-                 pid: bytes,
-                 game_objects: set[GameObject], 
-                 disconnect_callback: Callable[[_GameProtocol, str], Coroutine[Any, Any, None]], 
-                 db_session_callback: async_sessionmaker
+            websocket: ws.WebSocketServerProtocol, 
+            pid: bytes,
+            game_objects: set[GameObject], 
+            disconnect_callback: Callable[[_GameProtocol, str], Coroutine[Any, Any, None]], 
+            db_session_callback: async_sessionmaker, 
+            serializer: BaseSerializer
         ) -> None:
-        super().__init__(pid, game_objects, db_session_callback)
+        super().__init__(pid, game_objects, db_session_callback, serializer)
         self._websocket: ws.WebSocketServerProtocol = websocket
         self._disconnect: Callable[[_GameProtocol, str], Coroutine[Any, Any, None]] = disconnect_callback
 
@@ -78,7 +82,7 @@ class _PlayerProtocol(_GameProtocol):
                 continue
             
             try:
-                p: BasePacket = deserialize(message)
+                p: BasePacket = self._serializer.deserialize(message)
             except MalformedPacketError as e:
                 self._logger.error(f"Malformed packet: {e}")
                 continue

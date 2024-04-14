@@ -7,6 +7,7 @@ import websockets as ws
 from ssl import SSLContext
 from uuid import uuid4
 from netbound.packet import BasePacket, DisconnectPacket, register_packet
+from netbound.packet.serializer import BaseSerializer, MessagePackSerializer
 from netbound.app.game import GameObject, GameObjectsSet
 from netbound.app.protocol import _GameProtocol, _PlayerProtocol
 from netbound.constants import EVERYONE
@@ -66,6 +67,7 @@ class ServerApp:
         self._async_session: async_sessionmaker = async_sessionmaker(bind=self._async_engine, class_=AsyncSession, expire_on_commit=False)
 
         self._logger: ServerLoggingAdapter = ServerLoggingAdapter(logging.getLogger(__name__))
+        self._serializer: BaseSerializer = MessagePackSerializer()
 
         self.initial_state: BaseState | None = None  # This will be set by the the start method
 
@@ -85,9 +87,17 @@ class ServerApp:
         Adds an NPC to the server. This will create a new connection with the specified initial state and add it to the 
         list of connected protocols. This will allow the NPC to send and receive packets like any other connected client.
         """
-        proto: _GameProtocol = _GameProtocol(uuid4().bytes, self._game_objects, self._async_engine)
+        proto: _GameProtocol = _GameProtocol(uuid4().bytes, self._game_objects, self._async_engine, self._serializer)
         self._connected_protocols[proto._pid] = proto
         await proto._start(npc_initial_state)
+
+    def set_serializer(self, serializer: BaseSerializer) -> None:
+        """
+        Sets the serializer used by the server to serialize and deserialize packets. This is useful 
+        for customizing the serialization and deserialization process. The serializer must be an 
+        instance of a subclass of `netbound.packet.serializer.BaseSerializer`.
+        """
+        self._serializer = serializer
 
 
     def add_game_object(self, game_object: GameObject) -> None:
@@ -155,7 +165,7 @@ class ServerApp:
 
     async def _handle_connection(self, websocket: ws.WebSocketServerProtocol) -> None:
         self._logger.info(f"New connection from {websocket.remote_address}")
-        proto: _PlayerProtocol = _PlayerProtocol(websocket, uuid4().bytes, self._game_objects, self._disconnect_protocol, self._async_session)
+        proto: _PlayerProtocol = _PlayerProtocol(websocket, uuid4().bytes, self._game_objects, self._disconnect_protocol, self._async_session, self._serializer)
         self._connected_protocols[proto._pid] = proto
         await proto._start(self.initial_state)
 
@@ -232,7 +242,7 @@ class ServerApp:
 
     async def _send_to_client(self, proto: _PlayerProtocol, p: BasePacket) -> None:
         try:
-            await proto._websocket.send(p.serialize())
+            await proto._websocket.send(self._serializer.serialize(p))
         except ws.ConnectionClosed as e:
             self._logger.error(f"Connection closed: {e}")
             await self._disconnect_protocol(proto, "Connection closed")
