@@ -2,7 +2,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from netbound.packet import BasePacket, MalformedPacketError, UnknownPacketError
 from pydantic import ValidationError
-from typing import Any
+from typing import Any, Type
 import base64
 import msgpack
 
@@ -85,3 +85,9 @@ class MessagePackSerializer(BaseSerializer):
             return packet_class(**packet_data)
         except TypeError as e:
             raise MalformedPacketError(f"Packet data does not match expected signature: {e}")
+
+def register_packet(packet: Type[BasePacket]) -> None:
+    """
+    Injects a user-defined packet into the engine's global namespace so that it can be deserialized.
+    """
+    globals()[packet.__name__] = packet

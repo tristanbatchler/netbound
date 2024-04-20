@@ -70,9 +70,4 @@ class MalformedPacketError(ValueError):
 class UnknownPacketError(ValueError):
     pass
 
-def register_packet(packet: Type[BasePacket]) -> None:
-    """
-    Injects a user-defined packet into the engine's global namespace so that it can be deserialized.
-    """
-    globals()[packet.__name__] = packet
 

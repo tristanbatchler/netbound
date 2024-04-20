@@ -6,8 +6,8 @@ from typing import Optional, Type, Iterable
 import websockets as ws
 from ssl import SSLContext
 from uuid import uuid4
-from netbound.packet import BasePacket, DisconnectPacket, register_packet
-from netbound.packet.serializer import BaseSerializer, MessagePackSerializer
+from netbound.packet import BasePacket, DisconnectPacket
+from netbound.packet.serializer import BaseSerializer, MessagePackSerializer, register_packet
 from netbound.app.game import GameObject, GameObjectsSet
 from netbound.app.protocol import _GameProtocol, _PlayerProtocol
 from netbound.constants import EVERYONE
