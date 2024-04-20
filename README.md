@@ -17,8 +17,9 @@ async def main() -> None:
 
     print("Server starting...")
 
+    from my_states import EntryState
     async with asyncio.TaskGroup() as tg:
-        tg.create_task(server_app.start())
+        tg.create_task(server_app.start(EntryState))
         tg.create_task(server_app.run(ticks_per_second=10))
 
     print("Server stopped")
@@ -28,7 +29,7 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logging.info("Server stopped by user")
+        print("Server stopped by user")
 ```
 
 ## Defining packets
